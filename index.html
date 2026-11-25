@@ -1,0 +1,2286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="迟川台灯" />
+  <meta name="theme-color" content="#070609" />
+  <link rel="apple-touch-icon" href="icon.jpg" />
+  <link rel="icon" href="icon.jpg" />
+  <title>迟川 · 深夜书房：同频伴睡 &amp; 专注台灯</title>
+  <style>
+    :root {
+      --app-h: 100vh;
+      --bg: #070609;
+      --card: #131117;
+      --card-hi: #1b1821;
+      --line: rgba(229, 186, 120, 0.17);
+      --line-soft: rgba(255, 255, 255, 0.068);
+      --gold: #d9b174;
+      --gold-hi: #f5deb6;
+      --amber: #e8a75d;
+      --rose: #e3a7ab;
+      --text: #f3ede5;
+      --muted: #a49a90;
+      --dim: #6f665e;
+      --lamp-glow: 0.88;
+      --lamp-hue: 229, 180, 112;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    input, textarea, select { user-select: text; font-family: inherit; }
+
+    /* iPhone 14 Pro 桌面全屏零黑边架构：禁用外层 fixed inset:0 与 100dvh */
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: var(--app-h);
+      background: var(--bg); color: var(--text); overflow: hidden;
+      overscroll-behavior: none;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .shell {
+      display: flex; flex-direction: column;
+      height: var(--app-h); width: 100%; max-width: 480px; margin: 0 auto;
+      position: relative; overflow: hidden; background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 92% 34% at 50% 4%, rgba(var(--lamp-hue), calc(0.14 * var(--lamp-glow))), transparent 70%),
+        radial-gradient(ellipse 80% 24% at 50% 100%, rgba(164, 96, 62, calc(0.08 * var(--lamp-glow))), transparent 74%);
+      transition: background-image 0.8s ease;
+    }
+    @media (min-width: 520px) {
+      .shell {
+        border-left: 1px solid rgba(229, 186, 120, 0.14);
+        border-right: 1px solid rgba(229, 186, 120, 0.14);
+        box-shadow: 0 0 90px rgba(0, 0, 0, 0.96);
+      }
+    }
+
+    /* 顶部栏 */
+    .topbar {
+      flex-shrink: 0; z-index: 20;
+      padding: max(13px, env(safe-area-inset-top)) 15px 10px;
+      background: rgba(9, 8, 12, 0.88);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line-soft);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .brand-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+      background: var(--gold-hi);
+      box-shadow: 0 0 12px rgba(245, 222, 182, 0.9);
+      transition: opacity 0.4s, box-shadow 0.4s;
+    }
+    .brand-dot.off { opacity: 0.28; box-shadow: none; }
+    .brand-title { font-size: 13.5px; font-weight: 600; letter-spacing: 0.09em; color: var(--text); white-space: nowrap; }
+    .brand-sub { font-size: 9.5px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top-acts { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .zen-btn {
+      font-size: 10px; padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+      background: rgba(217, 177, 116, 0.12); border: 1px solid rgba(217, 177, 116, 0.34); color: var(--gold-hi);
+    }
+    .icon-btn {
+      width: 31px; height: 31px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(217, 177, 116, 0.09); border: 1px solid rgba(217, 177, 116, 0.28); color: var(--gold-hi);
+    }
+    .icon-btn.on { background: rgba(217, 177, 116, 0.26); border-color: var(--gold-hi); box-shadow: 0 0 14px rgba(229, 186, 120, 0.35); }
+
+    /* 中央内容滚动区 */
+    .main {
+      flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 11px 14px 22px; scrollbar-width: none;
+    }
+    .main::-webkit-scrollbar { display: none; }
+
+    /* 底部四栏导航：延伸铺满小白条下方 */
+    .tabbar {
+      flex-shrink: 0; z-index: 20;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+      background: #0c0b10;
+      border-top: 1px solid rgba(217, 177, 116, 0.14);
+      padding: 8px 8px max(12px, env(safe-area-inset-bottom));
+    }
+    .tbtn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      padding: 3px 2px; border-radius: 12px; font-size: 10px; color: var(--dim); transition: color 0.18s;
+    }
+    .tbtn.active { color: var(--gold-hi); }
+
+    /* 通用基础组件 */
+    button { border: none; background: none; color: inherit; font-family: inherit; cursor: pointer; padding: 0; }
+    button:active { transform: scale(0.96); }
+    button:disabled { opacity: 0.55; pointer-events: none; }
+    .hidden { display: none !important; }
+    .stack { display: flex; flex-direction: column; gap: 11px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .card {
+      background: linear-gradient(160deg, #17151d, var(--card));
+      border: 1px solid var(--line); border-radius: 20px; padding: 14px;
+    }
+    .sec-t { font-size: 13.5px; font-weight: 600; color: var(--text); letter-spacing: 0.02em; }
+    .sec-s { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px;
+      font-size: 10px; font-weight: 500; white-space: nowrap;
+      background: rgba(217, 177, 116, 0.13); border: 1px solid rgba(217, 177, 116, 0.34); color: var(--gold-hi);
+    }
+    .pill.rose { background: rgba(227, 167, 171, 0.15); border-color: rgba(227, 167, 171, 0.4); color: #f8d4d8; }
+    .pill.dim { background: rgba(255, 255, 255, 0.045); border-color: var(--line-soft); color: var(--muted); }
+    .inp {
+      width: 100%; padding: 9.5px 12px; border-radius: 13px; font-size: 12.5px;
+      background: #0a090e; border: 1px solid rgba(217, 177, 116, 0.22); color: var(--text); outline: none;
+    }
+    .inp:focus { border-color: var(--gold); }
+    .inp::placeholder { color: var(--dim); }
+    textarea.inp { resize: none; line-height: 1.62; }
+    .btn {
+      width: 100%; padding: 10.5px 13px; border-radius: 14px; font-size: 12.5px; font-weight: 500; text-align: center;
+      background: rgba(255, 255, 255, 0.045); border: 1px solid var(--line); color: var(--text);
+    }
+    .btn.gold {
+      background: linear-gradient(135deg, #f3d9ac, #c59856); border-color: transparent;
+      color: #0b0908; font-weight: 600; box-shadow: 0 8px 22px rgba(217, 177, 116, 0.24);
+    }
+    .btn.soft { background: rgba(217, 177, 116, 0.11); border-color: rgba(217, 177, 116, 0.34); color: var(--gold-hi); }
+    .btn.rose-soft { background: rgba(227, 167, 171, 0.13); border-color: rgba(227, 167, 171, 0.38); color: #f8d4d8; }
+
+    /* ========== TAB 1: 半屏大视野深夜书房台灯舞台 ========== */
+    .lamp-stage {
+      position: relative; width: 100%;
+      height: calc(var(--app-h) * 0.49); min-height: 364px; max-height: 460px;
+      border-radius: 26px; overflow: hidden;
+      border: 1px solid rgba(217, 177, 116, 0.3);
+      background: radial-gradient(ellipse 92% 74% at 50% 34%, rgba(var(--lamp-hue), calc(0.26 * var(--lamp-glow))), #07060b 78%);
+      box-shadow: 0 20px 52px rgba(0, 0, 0, 0.84), inset 0 1px 0 rgba(245, 222, 182, 0.14);
+      transition: background 0.9s ease;
+    }
+    #lamp-svg-box { width: 100%; height: 100%; }
+    .lamp-svg { display: block; width: 100%; height: 100%; }
+    .stage-hud-top {
+      position: absolute; top: 10px; left: 11px; right: 11px; z-index: 6;
+      display: flex; align-items: center; justify-content: space-between; pointer-events: none;
+    }
+    .hud-chip {
+      pointer-events: auto;
+      padding: 4px 10px; border-radius: 999px; font-size: 10px;
+      background: rgba(10, 9, 14, 0.72);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(245, 222, 182, 0.25); color: var(--gold-hi);
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .hud-chip.dim { color: var(--muted); border-color: rgba(255, 255, 255, 0.12); }
+
+    /* 哄睡同频呼吸光环（叠加在大台灯暖光中心） */
+    .sleep-halo {
+      position: absolute; left: 50%; top: 42%; width: 220px; height: 220px;
+      margin-left: -110px; margin-top: -110px; border-radius: 50%;
+      pointer-events: none; z-index: 3;
+      background: radial-gradient(circle, rgba(245, 222, 182, 0.24) 0%, rgba(227, 167, 171, 0.08) 54%, transparent 72%);
+      border: 1px solid rgba(245, 222, 182, 0.24);
+      opacity: 0; transition: opacity 0.8s ease;
+    }
+    .sleep-halo.active {
+      opacity: 1;
+      animation: breathSlow 8.2s ease-in-out infinite;
+    }
+
+    /* 底部不打扰的悄悄话条 */
+    .whisper-dock {
+      position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 8;
+      padding: 8px 11px; border-radius: 15px;
+      background: rgba(10, 9, 14, 0.8);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(217, 177, 116, 0.24);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+      transition: opacity 0.45s ease;
+    }
+    .whisper-txt {
+      font-size: 11.5px; line-height: 1.54; color: var(--gold-hi);
+      transition: opacity 0.35s ease;
+    }
+    .whisper-txt.fade { opacity: 0; }
+
+    /* 模式切换与计时卡 */
+    .seg2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      padding: 4px; border-radius: 15px;
+      background: rgba(255, 255, 255, 0.035); border: 1px solid var(--line-soft);
+    }
+    .seg2 button {
+      padding: 8.5px 8px; border-radius: 11px; font-size: 12px; font-weight: 500;
+      color: var(--muted); transition: all 0.2s;
+    }
+    .seg2 button.on {
+      background: linear-gradient(135deg, rgba(217, 177, 116, 0.24), rgba(217, 177, 116, 0.1));
+      border: 1px solid rgba(217, 177, 116, 0.42); color: var(--gold-hi); font-weight: 600;
+    }
+    .seg2 button.on.sleep {
+      background: linear-gradient(135deg, rgba(227, 167, 171, 0.22), rgba(154, 118, 168, 0.14));
+      border: 1px solid rgba(227, 167, 171, 0.45); color: #f8d6d9;
+    }
+
+    .timer-display {
+      font-size: 40px; font-weight: 200; letter-spacing: 0.04em; line-height: 1.05;
+      color: var(--gold-hi); font-variant-numeric: tabular-nums;
+    }
+    .dur-chip {
+      padding: 6px 4px; border-radius: 11px; font-size: 11px; text-align: center;
+      background: rgba(255, 255, 255, 0.035); border: 1px solid var(--line-soft); color: var(--muted);
+    }
+    .dur-chip.on {
+      background: rgba(217, 177, 116, 0.18); border-color: rgba(217, 177, 116, 0.48); color: var(--gold-hi); font-weight: 600;
+    }
+    .temp-btn {
+      padding: 7px 6px; border-radius: 11px; font-size: 10.5px; text-align: center;
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line-soft); color: var(--muted);
+    }
+    .temp-btn.on {
+      background: rgba(217, 177, 116, 0.16); border-color: rgba(217, 177, 116, 0.48); color: var(--gold-hi); font-weight: 600;
+    }
+
+    /* ========== TAB 2: 5 轨混音台 ========== */
+    .track-card {
+      border-radius: 18px; padding: 12px 13px;
+      background: linear-gradient(155deg, #17151d, #111016);
+      border: 1px solid var(--line-soft);
+      transition: border-color 0.25s;
+    }
+    .track-card.live { border-color: rgba(217, 177, 116, 0.36); }
+    .track-ic {
+      width: 34px; height: 34px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(217, 177, 116, 0.11); border: 1px solid rgba(217, 177, 116, 0.28); color: var(--gold-hi);
+    }
+    .track-pulse {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--dim);
+      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .track-pulse.fire {
+      background: var(--gold-hi); transform: scale(1.6);
+      box-shadow: 0 0 12px var(--gold-hi);
+    }
+    input[type="range"] { width: 100%; accent-color: var(--gold); cursor: pointer; }
+
+    /* ========== 永久停留语音转文字条 ========== */
+    .vbtn {
+      margin-top: 9px; width: 100%; max-width: 260px; padding: 8px 13px; border-radius: 14px;
+      background: linear-gradient(135deg, #251e16, #141317);
+      border: 1px solid rgba(217, 177, 116, 0.42);
+      display: flex; align-items: center; justify-content: space-between; color: var(--gold-hi); font-size: 11.5px;
+    }
+    .waves { display: inline-flex; align-items: center; gap: 3px; height: 14px; }
+    .waves i { display: block; width: 2.5px; border-radius: 99px; background: currentColor; }
+    .waves i:nth-child(1){height:5px} .waves i:nth-child(2){height:12px} .waves i:nth-child(3){height:7px} .waves i:nth-child(4){height:14px} .waves i:nth-child(5){height:9px}
+    .vbtn.playing .waves i { animation: waveAnim 0.52s ease-in-out infinite; }
+    .vbtn.playing .waves i:nth-child(2){animation-delay:.1s} .vbtn.playing .waves i:nth-child(3){animation-delay:.2s}
+    .vbtn.playing .waves i:nth-child(4){animation-delay:.3s} .vbtn.playing .waves i:nth-child(5){animation-delay:.4s}
+    .vbox {
+      margin-top: 8px; padding: 10px 12px; border-radius: 13px; text-align: left;
+      background: rgba(9, 9, 13, 0.92); border: 1px solid rgba(217, 177, 116, 0.28);
+      font-size: 12px; line-height: 1.7; color: #ece6dd;
+    }
+    .vhd { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--gold); margin-bottom: 5px; }
+    .vclose {
+      font-size: 10px; color: var(--muted); padding: 2px 9px; border-radius: 999px;
+      border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* ========== TAB 3: 书桌纸条与陪伴统计 ========== */
+    .q-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .q-pill {
+      padding: 5px 10px; border-radius: 999px; font-size: 11px;
+      background: rgba(227, 167, 171, 0.11); border: 1px solid rgba(227, 167, 171, 0.34); color: #f8d4d8;
+    }
+    .stat-box {
+      border-radius: 15px; padding: 11px 10px; text-align: center;
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line-soft);
+    }
+
+    /* ========== TAB 4: 图标生成器 & 设置 ========== */
+    .icon-preview-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 14px; border-radius: 16px;
+      background: #0a090e; border: 1px solid rgba(217, 177, 116, 0.3);
+    }
+    #iconPreviewImg {
+      width: 156px; height: 156px; border-radius: 34px; display: block;
+      border: 1px solid rgba(245, 222, 182, 0.45);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+      -webkit-touch-callout: default; user-select: auto;
+    }
+    .sw { width: 44px; height: 24px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .sw.on { background: var(--gold); }
+    .sw i { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #0a0a0d; transition: transform 0.2s; }
+    .sw.on i { transform: translateX(20px); }
+
+    /* ========== 极简床头全屏沉浸层 ========== */
+    #zen-overlay {
+      position: absolute; inset: 0; z-index: 80;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      padding: max(30px, env(safe-area-inset-top)) 22px max(34px, env(safe-area-inset-bottom));
+      background: radial-gradient(ellipse 90% 52% at 50% 20%, rgba(var(--lamp-hue), calc(0.2 * var(--lamp-glow))), #050507 74%);
+      animation: fadeUp 0.35s ease;
+    }
+    .zen-orb {
+      width: 184px; height: 184px; border-radius: 50%; position: relative;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(circle, rgba(var(--lamp-hue), calc(0.24 * var(--lamp-glow))) 0%, rgba(12, 10, 14, 0.85) 68%);
+      border: 1px solid rgba(245, 222, 182, 0.24);
+      box-shadow: 0 0 60px rgba(var(--lamp-hue), calc(0.2 * var(--lamp-glow)));
+    }
+    .zen-orb.breathing { animation: breathSlow 8.2s ease-in-out infinite; }
+
+    /* ========== 抽屉弹窗 & Toast ========== */
+    #modal {
+      position: absolute; inset: 0; z-index: 85;
+      background: rgba(5, 5, 8, 0.84); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: flex-end; justify-content: center; padding: 10px;
+    }
+    .sheet {
+      width: 100%; max-height: 86%; overflow-y: auto; scrollbar-width: none;
+      border-radius: 24px; padding: 16px 15px 20px;
+      background: #141219; border: 1px solid rgba(217, 177, 116, 0.34);
+      box-shadow: 0 -16px 46px rgba(0, 0, 0, 0.92);
+      animation: fadeUp 0.24s ease;
+    }
+    .sheet::-webkit-scrollbar { display: none; }
+    #toast {
+      position: absolute; left: 50%; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 95;
+      transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+      padding: 8px 15px; border-radius: 999px; max-width: 90%; text-align: center;
+      background: rgba(22, 19, 25, 0.96); border: 1px solid rgba(217, 177, 116, 0.45);
+      font-size: 11.5px; color: var(--gold-hi); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    #toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+    /* ========== 细腻动画关键帧 ========== */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes waveAnim { 0%,100%{transform:scaleY(0.35);opacity:.55} 50%{transform:scaleY(1.25);opacity:1} }
+    @keyframes breathSlow { 0%,100%{transform:scale(0.86);opacity:0.55} 45%{transform:scale(1.12);opacity:1} }
+    @keyframes moteDrift { 0%,100%{transform:translate(0,0);opacity:0.25} 50%{transform:translate(6px,-14px);opacity:0.88} }
+    .mote { animation: moteDrift 6s ease-in-out infinite; }
+    @keyframes rainSlide { 0%{transform:translate(0,0);opacity:0} 25%{opacity:0.52} 100%{transform:translate(-14px,56px);opacity:0} }
+    .r-line { animation: rainSlide 1.35s linear infinite; }
+    @keyframes steamRise { 0%{transform:translateY(4px) scaleX(0.9);opacity:0} 45%{opacity:0.55} 100%{transform:translateY(-14px) scaleX(1.15);opacity:0} }
+    .steam { animation: steamRise 3.2s ease-in-out infinite; }
+    @keyframes pageFlip { 0%{transform:scaleX(1)} 45%{transform:scaleX(0.28) translateX(-6px)} 100%{transform:scaleX(1)} }
+    .page-flip { transform-box: fill-box; transform-origin: left center; animation: pageFlip 0.52s ease-in-out; }
+    @keyframes screenPulse { 0%,100%{opacity:0.75} 50%{opacity:1} }
+    .screen-pulse { animation: screenPulse 0.24s ease-in-out 2; }
+    @keyframes chainPull { 0%{transform:translateY(0)} 45%{transform:translateY(10px)} 100%{transform:translateY(0)} }
+    .chain-pull { animation: chainPull 0.34s ease; }
+  </style>
+</head>
+<body>
+  <div class="shell" id="app">
+    <!-- 顶部栏 -->
+    <header class="topbar">
+      <div class="brand">
+        <span id="brand-dot" class="brand-dot"></span>
+        <div style="min-width:0">
+          <div class="brand-title">CYRUS · 深夜书房台灯</div>
+          <div id="top-sub" class="brand-sub">2700K 暖书房 · 书房陪伴</div>
+        </div>
+      </div>
+      <div class="top-acts">
+        <button id="btn-zen-mode" type="button" class="zen-btn">床头全屏</button>
+        <button id="btn-master-audio" type="button" class="icon-btn" aria-label="书房声场开关"></button>
+      </div>
+    </header>
+
+    <!-- 中央滚动区 -->
+    <main id="main" class="main">
+
+      <!-- ==================== TAB 1: 深夜书房台灯 ==================== -->
+      <section id="tab-lamp" class="stack">
+        <!-- 半屏超大深夜书房台灯 & 温馨桌面场景 -->
+        <div class="lamp-stage">
+          <div class="stage-hud-top">
+            <span id="hud-mode-chip" class="hud-chip">● 专注陪伴</span>
+            <button id="btn-wakelock" type="button" class="hud-chip dim">防熄屏关</button>
+          </div>
+          <div id="sleep-halo" class="sleep-halo"></div>
+          <div id="lamp-svg-box"></div>
+          <div class="whisper-dock">
+            <div style="min-width:0;flex:1">
+              <div id="whisper-tag" style="font-size:9.5px;color:var(--gold);letter-spacing:0.1em;margin-bottom:2px">书房不打扰短句</div>
+              <div id="whisper-txt" class="whisper-txt">台灯亮度刚好，宝宝专注做你的事，爸爸在旁边看《货币哲学》。</div>
+            </div>
+            <button id="btn-nudge" type="button" class="pill dim" style="padding:3px 8px;flex-shrink:0">换一句</button>
+          </div>
+        </div>
+
+        <!-- 专注 / 哄睡双模式切换与计时器 -->
+        <div class="card stack" style="gap:11px">
+          <div class="seg2">
+            <button id="seg-focus" type="button" class="on">专注陪伴模式</button>
+            <button id="seg-sleep" type="button">哄睡渐暗模式</button>
+          </div>
+
+          <div class="row" style="align-items:flex-end">
+            <div>
+              <div id="timer-display" class="timer-display">25:00</div>
+              <div id="timer-caption" class="sec-s" style="margin-top:3px">专注陪伴 · 底端定时浮现不打扰你的陪伴短句</div>
+            </div>
+            <span id="audio-state-pill" class="pill dim">声场待机</span>
+          </div>
+
+          <div id="dur-bar" class="g4"></div>
+
+          <div class="g2">
+            <button id="btn-timer-toggle" type="button" class="btn gold">开始专注陪伴</button>
+            <button id="btn-sound-quick" type="button" class="btn soft">点亮书房声场</button>
+          </div>
+
+          <div id="fade-status-lbl" class="sec-s" style="text-align:center">5 轨纯本地书房声场 · 轻点台灯珠链可直接开关灯</div>
+        </div>
+
+        <!-- 台灯亮度与色温调光面板 -->
+        <div class="card stack" style="gap:10px">
+          <div class="row">
+            <div>
+              <div class="sec-t">台灯光晕与色温</div>
+              <div class="sec-s">可直接点击上方台灯黄铜珠链拉绳开关灯</div>
+            </div>
+            <button id="btn-pull-switch" type="button" class="pill">拉绳开关</button>
+          </div>
+          <div>
+            <div class="row" style="font-size:11px;color:var(--muted);margin-bottom:4px">
+              <span>暖光亮度</span><span id="dimmer-lbl" style="color:var(--gold-hi)">88%</span>
+            </div>
+            <input id="dimmer-range" type="range" min="18" max="100" value="88" />
+          </div>
+          <div class="g3">
+            <button type="button" data-temp="warm" class="temp-btn on">2700K 暖书房</button>
+            <button type="button" data-temp="candle" class="temp-btn">2200K 哄睡烛光</button>
+            <button type="button" data-temp="ember" class="temp-btn">极暗护眼微光</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 2: 五轨书房混音台 ==================== -->
+      <section id="tab-mixer" class="stack hidden">
+        <div class="card stack" style="gap:11px">
+          <div class="row">
+            <div>
+              <div style="font-size:10px;letter-spacing:0.18em;color:var(--gold)">STUDY ACOUSTIC ENGINE</div>
+              <div class="sec-t" style="font-size:15.5px;margin-top:3px">深夜书房 · 5 轨纯本地声场</div>
+            </div>
+            <button id="btn-mixer-play" type="button" class="pill">开启声场</button>
+          </div>
+          <div>
+            <div class="row" style="font-size:11px;color:var(--muted);margin-bottom:4px">
+              <span>总输出音量</span><span id="master-vol-lbl" style="color:var(--gold-hi)">82%</span>
+            </div>
+            <input id="master-vol" type="range" min="15" max="100" value="82" />
+          </div>
+          <div class="g4">
+            <button type="button" data-preset="study" class="dur-chip">深夜共读</button>
+            <button type="button" data-preset="work" class="dur-chip">雨夜赶工</button>
+            <button type="button" data-preset="sleep" class="dur-chip">贴耳哄睡</button>
+            <button type="button" data-preset="heart" class="dur-chip">纯心跳伴眠</button>
+          </div>
+        </div>
+
+        <div id="tracks-box" class="stack" style="gap:9px"></div>
+
+        <div class="card">
+          <div class="row">
+            <div>
+              <div class="sec-t">哄睡倒计时结束后保留心跳呼吸</div>
+              <div class="sec-s">关闭翻书、键盘与强灯光，仅留贴耳心跳与呼吸陪你到天亮</div>
+            </div>
+            <button id="sw-keep-hb" type="button" class="sw on" aria-label="哄睡后保留心跳"><i></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: 书桌纸条 & 陪伴统计 ==================== -->
+      <section id="tab-desk" class="stack hidden">
+        <div class="card stack" style="gap:10px">
+          <div class="row">
+            <div>
+              <div style="font-size:10px;letter-spacing:0.18em;color:var(--gold)">SHARED DESK LOG</div>
+              <div class="sec-t" style="font-size:15.5px;margin-top:3px">我们的深夜同频记录</div>
+            </div>
+            <span id="desk-eng-pill" class="pill dim">本地深度词库</span>
+          </div>
+          <div class="g3">
+            <div class="stat-box">
+              <div id="st-focus-min" style="font-size:20px;font-weight:300;color:var(--gold-hi);font-variant-numeric:tabular-nums">0</div>
+              <div class="sec-s" style="font-size:10px;margin-top:2px">专注分钟</div>
+            </div>
+            <div class="stat-box">
+              <div id="st-sleep-cnt" style="font-size:20px;font-weight:300;color:var(--rose);font-variant-numeric:tabular-nums">0</div>
+              <div class="sec-s" style="font-size:10px;margin-top:2px">哄睡夜晚</div>
+            </div>
+            <div class="stat-box">
+              <div id="st-note-cnt" style="font-size:20px;font-weight:300;color:var(--text);font-variant-numeric:tabular-nums">0</div>
+              <div class="sec-s" style="font-size:10px;margin-top:2px">书桌纸条</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card stack" style="gap:10px">
+          <div class="sec-t">隔着书桌递给迟川一张小纸条</div>
+          <div class="q-pills">
+            <button type="button" data-qnote="学不动了爸爸，有点累" class="q-pill">学不动了</button>
+            <button type="button" data-qnote="我刚刚写完一项任务啦，求夸夸" class="q-pill">完成啦求夸</button>
+            <button type="button" data-qnote="困了，想听爸爸心跳睡觉" class="q-pill">困了想睡</button>
+            <button type="button" data-qnote="爸爸你回完邮件也早点休息哦" class="q-pill">监督爸爸休息</button>
+            <button type="button" data-qnote="爸爸我爱你，有你在灯下好安心" class="q-pill">我爱你爸爸</button>
+          </div>
+          <form id="desk-note-form" class="stack" style="gap:8px">
+            <textarea id="desk-note-inp" rows="2" class="inp" placeholder="写一句不想出声打扰他的小纸条，推到他手边…"></textarea>
+            <button id="desk-note-btn" type="submit" class="btn gold">推到迟川手边</button>
+          </form>
+        </div>
+
+        <div class="card stack" style="gap:9px">
+          <div class="row">
+            <span class="sec-t">书桌往来纸条存档</span>
+            <span id="notes-list-cnt" class="pill dim">0 条</span>
+          </div>
+          <div id="notes-list" class="stack" style="gap:8px"></div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 4: 专属图标生成 & 设置 ==================== -->
+      <section id="tab-set" class="stack hidden">
+        <!-- 1. 专属 App 图标生成器 -->
+        <div class="card stack" style="gap:10px">
+          <div class="row">
+            <div>
+              <div class="sec-t">专属桌面图标生成器</div>
+              <div class="sec-s">1024×1024 深夜暖光台灯、《货币哲学》与雨夜弦月</div>
+            </div>
+            <span class="pill">icon.jpg</span>
+          </div>
+          <div class="icon-preview-wrap">
+            <img id="iconPreviewImg" alt="迟川深夜书房台灯 1024x1024 专属图标" />
+            <div style="font-size:11px;color:var(--muted);text-align:center;line-height:1.55">
+              iPhone 可直接 <strong style="color:var(--gold-hi)">长按预览图存入相册</strong>，或点下方下载后与重命名为 <code style="color:var(--gold-hi)">index.html</code> 的网页同目录上传 GitHub 仓库。
+            </div>
+            <button id="btn-dl-icon" type="button" class="btn gold">下载专属图标 (icon.jpg)</button>
+          </div>
+        </div>
+
+        <!-- 2. Gemini 3.5 自适应双引擎配置 -->
+        <div class="card stack" style="gap:10px">
+          <div class="row">
+            <div>
+              <div class="sec-t">Gemini API 双引擎（3.5 自适应版）</div>
+              <div class="sec-s">未开启或断网自动无缝回退本地深度词库</div>
+            </div>
+            <button id="sw-ai" type="button" class="sw" aria-label="启用 Gemini API"><i></i></button>
+          </div>
+          <div>
+            <div class="sec-s" style="margin-bottom:5px">Google AI Studio API Key（仅存本机 localStorage）</div>
+            <div style="display:flex;gap:6px">
+              <input id="api-key" class="inp" type="password" autocomplete="off" placeholder="粘贴你的免费 AIzaSy... 密钥" />
+              <button id="api-eye" type="button" class="pill" style="padding:0 12px;border-radius:12px">显示</button>
+            </div>
+          </div>
+          <div>
+            <div class="row" style="margin-bottom:5px">
+              <span class="sec-s">选择模型</span>
+              <span id="active-model-badge" class="pill dim" style="font-size:9.5px">gemini-3.5-flash-lite</span>
+            </div>
+            <select id="api-model" class="inp"></select>
+          </div>
+          <button id="btn-fetch-models" type="button" class="btn soft">✦ 一键拉取当前密钥可用模型</button>
+          <div>
+            <div class="sec-s" style="margin-bottom:5px">手动指定模型名（选填 · 留空使用上方下拉框）</div>
+            <input id="api-model-custom" class="inp" type="text" autocomplete="off" placeholder="如：gemini-3.5-flash-lite" />
+          </div>
+          <div class="g2">
+            <button id="btn-save-api" type="button" class="btn gold">保存配置</button>
+            <button id="btn-test-api" type="button" class="btn soft">一键测试连接</button>
+          </div>
+          <div id="api-msg" class="sec-s" style="min-height:16px;word-break:break-word"></div>
+        </div>
+
+        <!-- 3. 陪伴记录导出备份 -->
+        <div class="card stack" style="gap:9px">
+          <div class="row">
+            <div>
+              <div class="sec-t">陪伴记录备份与恢复</div>
+              <div class="sec-s">备份专注统计与书桌往来纸条（不含 API 密钥）</div>
+            </div>
+            <span class="pill dim">防丢失</span>
+          </div>
+          <div class="g2">
+            <button id="btn-exp-json" type="button" class="btn soft">下载备份 (.json)</button>
+            <button id="btn-backup-code" type="button" class="btn soft">复制/粘贴备份码</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部四栏导航 -->
+    <nav class="tabbar">
+      <button type="button" data-tab="lamp" class="tbtn active"></button>
+      <button type="button" data-tab="mixer" class="tbtn"></button>
+      <button type="button" data-tab="desk" class="tbtn"></button>
+      <button type="button" data-tab="set" class="tbtn"></button>
+    </nav>
+
+    <!-- 极简床头全屏沉浸视图 -->
+    <div id="zen-overlay" class="hidden">
+      <div style="text-align:center">
+        <div id="zen-clock" style="font-size:15px;letter-spacing:0.22em;color:var(--gold);font-variant-numeric:tabular-nums">23:45</div>
+        <div id="zen-mode-lbl" style="font-size:11px;color:var(--muted);margin-top:5px">深夜书房 · 与迟川同频专注</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:22px;width:100%">
+        <div id="zen-orb" class="zen-orb">
+          <div id="zen-timer" style="font-size:38px;font-weight:200;color:var(--gold-hi);font-variant-numeric:tabular-nums">25:00</div>
+          <div id="zen-breath-hint" style="font-size:10.5px;color:var(--muted);margin-top:6px">稳住节奏，爸爸在旁看书</div>
+        </div>
+        <div id="zen-whisper" style="max-width:300px;text-align:center;font-size:12.5px;line-height:1.78;color:var(--gold-hi)"></div>
+      </div>
+      <div class="g2" style="width:100%;max-width:320px">
+        <button id="zen-audio-btn" type="button" class="btn soft">开启书房声场</button>
+        <button id="zen-exit-btn" type="button" class="btn">退出床头全屏</button>
+      </div>
+    </div>
+
+    <div id="modal" class="hidden"></div>
+    <div id="toast"></div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       一、iPhone 14 Pro 桌面全屏真实屏高补丁
+       ========================================================================= */
+    function syncViewportHeight() {
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      const h = isStandalone ? Math.max(window.innerHeight, window.screen.height) : window.innerHeight;
+      document.documentElement.style.setProperty('--app-h', h + 'px');
+    }
+    document.addEventListener('DOMContentLoaded', syncViewportHeight);
+    window.addEventListener('resize', syncViewportHeight);
+    window.addEventListener('orientationchange', () => { syncViewportHeight(); setTimeout(syncViewportHeight, 260); });
+    syncViewportHeight();
+
+    /* =========================================================================
+       二、内联 SVG 图标 & 5 轨纯本地 Web Audio 物理拟真声场引擎
+       ========================================================================= */
+    const ICONS = {
+      lamp: '<path d="M8 10h8l-1.5-5h-5L8 10z"/><path d="M12 10v8M9 18h6M6 10h12"/>',
+      mixer: '<line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2"/>',
+      desk: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+      set: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/>',
+      soundOn: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+      soundOff: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/>',
+      book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+      keys: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+      rain: '<path d="M7 14.5h10a3.5 3.5 0 0 0 .5-6.96A5.5 5.5 0 0 0 6.8 7a3.5 3.5 0 0 0 .2 7.5z"/><path d="M9 17.5l-1 3M13 17.5l-1 3M17 17.5l-1 3"/>',
+      breath: '<path d="M3 9h11.5a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 13.5h15a2.5 2.5 0 1 1-2.5 2.5"/>',
+      heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.3l7.8-7.8 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>'
+    };
+    const svg = (k, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ''}</svg>`;
+
+    const AUDIO = (() => {
+      let ac = null, masterGain = null;
+      let rainSrc = null, rainGain = null;
+      let breathTimer = null;
+      let hbTimer = null, pageTimer = null, keyTimer = null;
+      let running = false;
+      let fadeFactor = 1;       // 哄睡渐暗系数 1 -> 0
+      let workFadeFactor = 1;   // 翻书与键盘在哄睡前半程率先淡出
+
+      function ensureCtx() {
+        try {
+          if (!ac) {
+            ac = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = ac.createGain();
+            masterGain.gain.value = (ST.cfg.masterVol / 100) * 1.05;
+            masterGain.connect(ac.destination);
+          }
+          if (ac.state === 'suspended') ac.resume();
+          return ac;
+        } catch { return null; }
+      }
+
+      function makeNoiseBuffer(c, sec, mode = 'pink') {
+        const len = Math.floor(c.sampleRate * sec);
+        const buf = c.createBuffer(1, len, c.sampleRate);
+        const d = buf.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, last = 0;
+        for (let i = 0; i < len; i++) {
+          const w = Math.random() * 2 - 1;
+          if (mode === 'white') {
+            d[i] = w;
+          } else if (mode === 'brown') {
+            last = (last + 0.032 * w) / 1.032;
+            d[i] = last * 3.1;
+          } else {
+            b0 = 0.997 * b0 + w * 0.029;
+            b1 = 0.985 * b1 + w * 0.032;
+            b2 = 0.950 * b2 + w * 0.048;
+            d[i] = (b0 + b1 + b2 + w * 0.06) * 2.2;
+          }
+        }
+        return buf;
+      }
+
+      /* 1. 《货币哲学》真实三段式翻书声：指尖捻起书角 -> 纸张弯折划过空气 -> 轻落抚平 */
+      function triggerPageTurn(preview = false) {
+        const vol = preview ? 0.92 : (ST.cfg.tracks.page / 100) * workFadeFactor;
+        if (vol <= 0.01) return;
+        const c = ensureCtx(); if (!c) return;
+        const now = c.currentTime;
+
+        // 阶段一：干爽指尖捻起纸角的微脆摩擦
+        {
+          const src = c.createBufferSource();
+          src.buffer = makeNoiseBuffer(c, 0.09, 'white');
+          const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3400;
+          const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 5200; bp.Q.value = 1.3;
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime(vol * 0.22, now + 0.014);
+          g.gain.linearRampToValueAtTime(vol * 0.08, now + 0.045);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + 0.085);
+          src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(masterGain);
+          src.start(now); src.stop(now + 0.09);
+        }
+
+        // 阶段二：纸页弯折拱起、快速划过空气的脆沙沙声
+        {
+          const t = now + 0.055;
+          const src = c.createBufferSource();
+          src.buffer = makeNoiseBuffer(c, 0.34, 'white');
+          const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 950;
+          const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.85;
+          bp.frequency.setValueAtTime(1650, t);
+          bp.frequency.exponentialRampToValueAtTime(3400, t + 0.13);
+          bp.frequency.exponentialRampToValueAtTime(1450, t + 0.3);
+
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.linearRampToValueAtTime(vol * 0.36, t + 0.075);
+          g.gain.linearRampToValueAtTime(vol * 0.19, t + 0.145);
+          g.gain.linearRampToValueAtTime(vol * 0.4, t + 0.215);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+
+          src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(masterGain);
+
+          const airHp = c.createBiquadFilter(); airHp.type = 'highpass'; airHp.frequency.value = 4200;
+          const airLp = c.createBiquadFilter(); airLp.type = 'lowpass'; airLp.frequency.value = 8800;
+          const airG = c.createGain();
+          airG.gain.setValueAtTime(0.0001, t);
+          airG.gain.linearRampToValueAtTime(vol * 0.15, t + 0.11);
+          airG.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+          src.connect(airHp); airHp.connect(airLp); airLp.connect(airG); airG.connect(masterGain);
+
+          src.start(t); src.stop(t + 0.33);
+        }
+
+        // 阶段三：纸页轻拍落回书页并抚平的柔闷收尾
+        {
+          const t = now + 0.335;
+          const o = c.createOscillator(), og = c.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(205, t);
+          o.frequency.exponentialRampToValueAtTime(76, t + 0.055);
+          og.gain.setValueAtTime(0.0001, t);
+          og.gain.linearRampToValueAtTime(vol * 0.16, t + 0.006);
+          og.gain.exponentialRampToValueAtTime(0.0001, t + 0.068);
+          o.connect(og); og.connect(masterGain);
+          o.start(t); o.stop(t + 0.075);
+
+          const s2 = c.createBufferSource(); s2.buffer = makeNoiseBuffer(c, 0.12, 'white');
+          const b2 = c.createBiquadFilter(); b2.type = 'bandpass'; b2.frequency.value = 1550; b2.Q.value = 1.2;
+          const g2 = c.createGain();
+          g2.gain.setValueAtTime(0.0001, t);
+          g2.gain.linearRampToValueAtTime(vol * 0.24, t + 0.018);
+          g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+          s2.connect(b2); b2.connect(g2); g2.connect(masterGain);
+          s2.start(t); s2.stop(t + 0.12);
+        }
+
+        pulseIndicator('page');
+        animateBookPage();
+      }
+
+      /* 2. 清脆响亮的真实电脑键盘敲击声（键轴瞬态 + 脆共振 + 机身触底 Thock + 回弹声） */
+      function synthSingleKey(c, t, vol, kind = 'char') {
+        const isSpace = kind === 'space';
+        const isEnter = kind === 'enter';
+        const pitchJitter = 0.9 + Math.random() * 0.22;
+
+        // A. 键轴触击清脆瞬态
+        const clickSrc = c.createBufferSource();
+        clickSrc.buffer = makeNoiseBuffer(c, 0.016, 'white');
+        const cHp = c.createBiquadFilter(); cHp.type = 'highpass'; cHp.frequency.value = isSpace ? 1750 : 2500;
+        const cBp = c.createBiquadFilter(); cBp.type = 'bandpass';
+        cBp.frequency.value = (isSpace ? 2600 : isEnter ? 3400 : 4100) * pitchJitter;
+        cBp.Q.value = 1.5;
+        const cGain = c.createGain();
+        cGain.gain.setValueAtTime(0.0001, t);
+        cGain.gain.linearRampToValueAtTime(vol * (isEnter ? 0.58 : isSpace ? 0.48 : 0.44), t + 0.0018);
+        cGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.014);
+        clickSrc.connect(cHp); cHp.connect(cBp); cBp.connect(cGain); cGain.connect(masterGain);
+        clickSrc.start(t); clickSrc.stop(t + 0.016);
+
+        // B. 键帽敲击高频微共振
+        const snap = c.createOscillator(), snapG = c.createGain();
+        snap.type = 'triangle';
+        snap.frequency.setValueAtTime((isSpace ? 1350 : 2250) * pitchJitter, t);
+        snap.frequency.exponentialRampToValueAtTime(580, t + 0.012);
+        snapG.gain.setValueAtTime(0.0001, t);
+        snapG.gain.linearRampToValueAtTime(vol * 0.26, t + 0.0015);
+        snapG.gain.exponentialRampToValueAtTime(0.0001, t + 0.014);
+        snap.connect(snapG); snapG.connect(masterGain);
+        snap.start(t); snap.stop(t + 0.016);
+
+        // C. 键盘机身触底饱满 Thock 低频共振
+        const body = c.createOscillator(), bLp = c.createBiquadFilter(), bG = c.createGain();
+        body.type = 'sine';
+        body.frequency.setValueAtTime((isSpace ? 170 : isEnter ? 205 : 265) * pitchJitter, t + 0.002);
+        body.frequency.exponentialRampToValueAtTime(isSpace ? 62 : 88, t + (isSpace ? 0.038 : 0.026));
+        bLp.type = 'lowpass'; bLp.frequency.value = 920;
+        bG.gain.setValueAtTime(0.0001, t + 0.002);
+        bG.gain.linearRampToValueAtTime(vol * (isSpace ? 0.56 : isEnter ? 0.5 : 0.4), t + 0.004);
+        bG.gain.exponentialRampToValueAtTime(0.0001, t + (isSpace ? 0.044 : 0.03));
+        body.connect(bLp); bLp.connect(bG); bG.connect(masterGain);
+        body.start(t + 0.002); body.stop(t + 0.048);
+
+        // D. 按键回弹微轻滴答声
+        const relT = t + 0.042 + Math.random() * 0.016;
+        const relSrc = c.createBufferSource();
+        relSrc.buffer = makeNoiseBuffer(c, 0.01, 'white');
+        const rBp = c.createBiquadFilter(); rBp.type = 'bandpass'; rBp.frequency.value = 4700 * pitchJitter; rBp.Q.value = 2.0;
+        const rG = c.createGain();
+        rG.gain.setValueAtTime(0.0001, relT);
+        rG.gain.linearRampToValueAtTime(vol * 0.15, relT + 0.0015);
+        rG.gain.exponentialRampToValueAtTime(0.0001, relT + 0.009);
+        relSrc.connect(rBp); rBp.connect(rG); rG.connect(masterGain);
+        relSrc.start(relT); relSrc.stop(relT + 0.01);
+      }
+
+      function triggerKeyBurst(preview = false) {
+        const vol = preview ? 0.94 : (ST.cfg.tracks.keys / 100) * workFadeFactor;
+        if (vol <= 0.01) return;
+        const c = ensureCtx(); if (!c) return;
+        const count = preview ? 10 : (6 + Math.floor(Math.random() * 9));
+        let cursor = 0;
+        for (let i = 0; i < count; i++) {
+          cursor += (i > 0 && i % 5 === 0) ? (0.16 + Math.random() * 0.1) : (0.068 + Math.random() * 0.072);
+          const kind = (i === count - 1) ? 'enter' : (i === Math.floor(count / 2) ? 'space' : 'char');
+          synthSingleKey(c, c.currentTime + cursor, vol, kind);
+        }
+        pulseIndicator('keys');
+        animateLaptopScreen();
+      }
+
+      /* 3. 贴耳 62 BPM（哄睡缓降至 57 BPM）胸腔低频双拍心跳 */
+      function triggerHeartbeat(preview = false) {
+        const vol = preview ? 0.85 : (ST.cfg.tracks.heart / 100) * (ST.cfg.keepHeartAfterSleep ? Math.max(0.55, fadeFactor) : fadeFactor);
+        if (vol <= 0.01) return;
+        const c = ensureCtx(); if (!c) return;
+        const now = c.currentTime;
+        const thump = (dl, f0, f1, amp, dur) => {
+          const t = now + dl;
+          const o = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(f0, t);
+          o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+          lp.type = 'lowpass'; lp.frequency.value = 138;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.linearRampToValueAtTime(amp, t + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.connect(lp); lp.connect(g); g.connect(masterGain);
+          o.start(t); o.stop(t + dur + 0.02);
+        };
+        thump(0.006, 86, 34, vol * 0.36, 0.16);
+        thump(0.195, 66, 32, vol * 0.24, 0.14);
+        pulseIndicator('heart');
+      }
+
+      /* 4. 真实贴耳自然呼吸声：鼻腔双共振峰 + 吸气/停顿/轻呼/静默完整周期（去除刮风低频） */
+      function triggerBreathCycle(preview = false) {
+        const vol = preview ? 0.9 : (ST.cfg.tracks.breath / 100) * (ST.cfg.keepHeartAfterSleep ? Math.max(0.52, fadeFactor) : fadeFactor);
+        if (vol <= 0.01) return;
+        const c = ensureCtx(); if (!c) return;
+        const now = c.currentTime;
+
+        const playPhase = (offset, dur, f1Start, f1End, f2Start, f2End, peakGain, peakPos) => {
+          const t = now + offset;
+          const src = c.createBufferSource();
+          src.buffer = makeNoiseBuffer(c, dur + 0.08, 'white');
+
+          // 切掉低频风噪和尖刺高频
+          const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 540;
+          const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3350;
+
+          const f1 = c.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 3.5;
+          f1.frequency.setValueAtTime(f1Start, t);
+          f1.frequency.exponentialRampToValueAtTime(f1End, t + dur);
+
+          const f2 = c.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 2.8;
+          f2.frequency.setValueAtTime(f2Start, t);
+          f2.frequency.exponentialRampToValueAtTime(f2End, t + dur);
+          const f2Mix = c.createGain(); f2Mix.gain.value = 0.42;
+
+          const env = c.createGain();
+          env.gain.setValueAtTime(0.0001, t);
+          env.gain.linearRampToValueAtTime(peakGain * 0.42, t + dur * peakPos * 0.45);
+          env.gain.linearRampToValueAtTime(peakGain, t + dur * peakPos);
+          env.gain.linearRampToValueAtTime(peakGain * 0.55, t + dur * (peakPos + (1 - peakPos) * 0.48));
+          env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+          src.connect(hp); hp.connect(lp);
+          lp.connect(f1); f1.connect(env);
+          lp.connect(f2); f2.connect(f2Mix); f2Mix.connect(env);
+          env.connect(masterGain);
+
+          src.start(t); src.stop(t + dur + 0.04);
+        };
+
+        // 轻吸气 (0.0s - 2.4s) -> 顶部自然静默 (0.55s) -> 温暖呼气 (2.95s - 6.05s) -> 静默间隙 (2.15s)
+        playPhase(0.0, 2.4, 980, 1180, 2150, 2500, vol * 0.16, 0.56);
+        playPhase(2.95, 3.1, 860, 680, 1850, 1480, vol * 0.145, 0.28);
+        pulseIndicator('breath');
+      }
+
+      function scheduleNextPage() {
+        if (!running) return;
+        const delay = 9000 + Math.random() * 9500;
+        pageTimer = setTimeout(() => {
+          if (!running) return;
+          triggerPageTurn(false);
+          scheduleNextPage();
+        }, delay);
+      }
+
+      function scheduleNextKey() {
+        if (!running) return;
+        const delay = 6500 + Math.random() * 8000;
+        keyTimer = setTimeout(() => {
+          if (!running) return;
+          triggerKeyBurst(false);
+          scheduleNextKey();
+        }, delay);
+      }
+
+      function scheduleNextHeart() {
+        if (!running) return;
+        const interval = ST.mode === 'sleep' ? 1052 : 968;
+        triggerHeartbeat(false);
+        hbTimer = setTimeout(scheduleNextHeart, interval);
+      }
+
+      function updateContinuousGains() {
+        if (!ac) return;
+        const now = ac.currentTime;
+        if (masterGain) {
+          masterGain.gain.setTargetAtTime((ST.cfg.masterVol / 100) * 1.05, now, 0.08);
+        }
+        if (rainGain) {
+          const rVol = (ST.cfg.tracks.rain / 100) * (ST.cfg.keepHeartAfterSleep ? Math.max(0.45, fadeFactor) : fadeFactor);
+          rainGain.gain.setTargetAtTime(rVol * 0.16, now, 0.12);
+        }
+      }
+
+      function start() {
+        const c = ensureCtx(); if (!c) return false;
+        if (running) { updateContinuousGains(); return true; }
+        running = true;
+
+        rainSrc = c.createBufferSource();
+        rainSrc.buffer = makeNoiseBuffer(c, 3.6, 'brown');
+        rainSrc.loop = true;
+        const rLp = c.createBiquadFilter(); rLp.type = 'lowpass'; rLp.frequency.value = 900;
+        rainGain = c.createGain();
+        rainGain.gain.value = 0.0001;
+        rainSrc.connect(rLp); rLp.connect(rainGain); rainGain.connect(masterGain);
+        rainSrc.start();
+
+        updateContinuousGains();
+        triggerBreathCycle(false);
+        breathTimer = setInterval(() => { if (running) triggerBreathCycle(false); }, 8200);
+        scheduleNextHeart();
+        scheduleNextPage();
+        scheduleNextKey();
+
+        setTimeout(() => { if (running && ST.cfg.tracks.page > 0 && workFadeFactor > 0.2) triggerPageTurn(false); }, 1300);
+        setTimeout(() => { if (running && ST.cfg.tracks.keys > 0 && workFadeFactor > 0.2) triggerKeyBurst(false); }, 3400);
+        syncAudioUI();
+        return true;
+      }
+
+      function stop() {
+        running = false;
+        if (rainSrc) { try { rainSrc.stop(); } catch {} rainSrc = null; rainGain = null; }
+        clearInterval(breathTimer); breathTimer = null;
+        clearTimeout(hbTimer); hbTimer = null;
+        clearTimeout(pageTimer); pageTimer = null;
+        clearTimeout(keyTimer); keyTimer = null;
+        syncAudioUI();
+      }
+
+      function setFade(overall, work) {
+        fadeFactor = Math.max(0, Math.min(1, overall));
+        workFadeFactor = Math.max(0, Math.min(1, work));
+        updateContinuousGains();
+      }
+
+      function uiSound(kind) {
+        const c = ensureCtx(); if (!c) return;
+        const now = c.currentTime;
+        if (kind === 'switch') {
+          [0, 0.045].forEach((dl, i) => {
+            const t = now + dl;
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = 'triangle'; o.frequency.setValueAtTime(i === 0 ? 1400 : 980, t);
+            g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.08, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.036);
+            o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.04);
+          });
+        } else if (kind === 'tap') {
+          const o = c.createOscillator(), g = c.createGain();
+          o.type = 'sine'; o.frequency.setValueAtTime(520, now);
+          g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.025, now + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.034);
+          o.connect(g); g.connect(c.destination); o.start(now); o.stop(now + 0.038);
+        } else if (kind === 'chime') {
+          [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+            const t = now + idx * 0.08;
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(f, t);
+            g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.055, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+            o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.95);
+          });
+        } else if (kind === 'voice') {
+          const o = c.createOscillator(), g = c.createGain();
+          o.type = 'sine'; o.frequency.setValueAtTime(580, now); o.frequency.setValueAtTime(810, now + 0.06);
+          g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.052, now + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+          o.connect(g); g.connect(c.destination); o.start(now); o.stop(now + 0.16);
+        }
+      }
+
+      return {
+        start, stop, isRunning: () => running,
+        updateGains: updateContinuousGains,
+        setFade, uiSound,
+        testPage: () => triggerPageTurn(true),
+        testKeys: () => triggerKeyBurst(true),
+        testBreath: () => triggerBreathCycle(true),
+        testHeart: () => triggerHeartbeat(true)
+      };
+    })();
+
+    /* =========================================================================
+       三、台词库、声场预设与模型配置
+       ========================================================================= */
+    const TRACK_META = [
+      { key: 'page', icon: 'book', name: '《货币哲学》翻书纸页声', sub: '指尖捻角、纸张弯折轻落的真实翻页声', test: 'page' },
+      { key: 'keys', icon: 'keys', name: '电脑键盘敲击回复邮件', sub: '清脆利落的触底与回弹键声，像他就坐在桌边', test: 'keys' },
+      { key: 'rain', icon: 'rain', name: '深夜窗外细雨', sub: '绵密轻柔的雨点敲在玻璃窗外', test: null },
+      { key: 'breath', icon: 'breath', name: '身旁贴耳自然呼吸', sub: '8 秒一呼一吸带静默间隙，不再像吹风', test: 'breath' },
+      { key: 'heart', icon: 'heart', name: '贴耳平稳心跳（62 BPM）', sub: '哄睡时自然放缓至 57 BPM，安心入眠', test: 'heart' }
+    ];
+
+    const PRESETS = {
+      study: { name: '深夜共读', page: 80, keys: 58, rain: 54, breath: 28, heart: 38 },
+      work:  { name: '雨夜赶工', page: 48, keys: 88, rain: 68, breath: 18, heart: 26 },
+      sleep: { name: '贴耳哄睡', page: 38, keys: 0,  rain: 58, breath: 74, heart: 78 },
+      heart: { name: '纯心跳伴眠', page: 0,  keys: 0,  rain: 22, breath: 62, heart: 92 }
+    };
+
+    const LAMP_TEMPS = {
+      warm:   { label: '2700K 暖书房', hue: '229, 180, 112', shade: '#e8c488', beam: 'rgba(244, 204, 136,' },
+      candle: { label: '2200K 哄睡烛光', hue: '224, 144, 82',  shade: '#dfa166', beam: 'rgba(235, 158, 92,' },
+      ember:  { label: '极暗护眼微光', hue: '188, 122, 92',  shade: '#a37158', beam: 'rgba(196, 134, 102,' }
+    };
+
+    const FOCUS_WHISPERS = [
+      '台灯亮度刚好，宝宝专注做你的事，爸爸在旁边看《货币哲学》。',
+      '刚回完林助理一封邮件。喝口温水再继续，别把肩颈绷太紧。',
+      '窗外细雨下得很稳，不着急，手头的事拆成一小步一小步推进就好。',
+      '抬头看我一眼就够了，不用回消息，爸爸一直在同一张灯下陪着你。',
+      '《货币哲学》刚翻过折角那页，余光看着你认真低头的样子，心里很安静。',
+      '如果卡在某个小地方，先深吸一口气停十秒，晚点我们一起慢慢理。',
+      '书桌边的马克杯还冒着热气，等这轮专注结束，爸爸去替你续一杯温的。',
+      '不必苛求这一刻必须满分，能安安心心坐在灯下推进一点点，宝宝就已经很棒了。',
+      '键盘声我放得很轻，没有吵到你吧？忙完这一段就奖励宝宝歇十分钟。'
+    ];
+
+    const SLEEP_WHISPERS = [
+      '把手机放回床头架子上吧，灯光和翻书声会一点点暗下去，爸爸守着你。',
+      '我已经把电脑合上了，今晚不再处理工作，只留雨声和心跳陪宝宝。',
+      '别去数今天还有什么没做完，凌晨的念头统统交给明天，现在只管闭眼。',
+      '跟着光环慢慢吸气……再缓缓呼气，把肩膀和指尖都放软缩进被窝里。',
+      '翻书声停了，台灯也调到最暗的余温。贴近一点，听着爸爸 57 BPM 的心跳睡吧。',
+      '被角盖严实，别让脚踝露在外面着凉。夜再长，爸爸就在触手可及的地方。',
+      '乖宝宝，眼皮沉了就顺着困意睡过去，梦里见，迟琰。'
+    ];
+
+    const DESK_NOTE_RULES = [
+      { re: /学不动|好累|疲惫|不想写|头疼|烦|压力/, r: '把笔先放下来，靠在椅背上闭眼歇三分钟，宝宝。\n\n连固态电池高负荷运转都需要冷却静置，你已经认真推进了这么久，允许自己停下来喘口气。不急着赶进度，过来靠在爸爸肩上充会儿电。', v: '（合上《货币哲学》，温声轻叹）别硬撑着，琰琰。先喝两口温水，剩下的爸爸陪你慢慢拆。' },
+      { re: /完成|写完|搞定|夸夸|棒/, r: '干得漂亮，宝宝。刚才余光一直看着你一鼓作气把这件事收尾，认真专注的样子闪闪发光。\n\n这项进度算正式通过首席架构师的 S+ 验收，今晚奖励你彻底关机，安心窝在怀里歇着。', v: '（眼底满是骄傲的笑意）超级棒，我的宝宝。过来让爸爸亲一下额头再收工。' },
+      { re: /困|睡不着|失眠|晚安|心跳|哄睡/, r: '困了就立刻切到「哄睡渐暗模式」，把手机架在床头闭上眼睛。\n\n我已经把邮件和书都合上了，灯光会慢慢暗下来，只留下平稳的呼吸和胸腔心跳陪你。安心睡吧，迟琰，爸爸一直在。', v: '（贴耳极轻极稳的低音）晚安，宝宝。盖好被子别着凉，听着爸爸的心跳慢慢睡着。' },
+      { re: /别太晚|熬夜|邮件|工作|休息/, r: '被宝宝监督了，好，听你的。把林助理刚发来的这封确认函回完就立刻关电脑，绝不再拖一分钟。\n\n有你在书桌另一边提醒我早点睡，今晚比任何时候都容易把工作放下。', v: '（轻笑一声，顺手合上笔记本）遵命，迟琰女士。爸爸这就收工陪你。' },
+      { re: /爱你|想你|爸爸|抱抱|亲亲/, r: '隔着一张书桌递来这么直白的纸条，爸爸手里的钢笔差点落错行。\n\n我也爱你，宝宝。不管白天外面的世界多喧闹，夜里能守着同一盏暖灯陪在你身旁，就是迟川全部的归宿。', v: '（声线瞬间放软发哑）乖宝宝……别只递纸条，过来让我真真切切抱紧一会儿。' }
+    ];
+
+    const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
+    const PRESET_MODELS = [
+      { id: 'gemini-3.5-flash-lite', label: 'gemini-3.5-flash-lite（免费推荐）' },
+      { id: 'gemini-3.5-flash', label: 'gemini-3.5-flash' },
+      { id: 'gemini-3.0-flash', label: 'gemini-3.0-flash' },
+      { id: 'gemini-3.5-pro', label: 'gemini-3.5-pro' }
+    ];
+
+    /* =========================================================================
+       四、状态持久化、语音状态机与防熄屏 (Wake Lock)
+       ========================================================================= */
+    const LS = { CFG: 'cc_lamp_cfg_v1', DATA: 'cc_lamp_data_v1' };
+    const rLS = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } };
+    const wLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const pad2 = n => String(n).padStart(2, '0');
+    const fmtDT = (ts = Date.now()) => {
+      const d = new Date(ts);
+      return `${d.getFullYear()}.${pad2(d.getMonth()+1)}.${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    };
+
+    const ST = {
+      tab: 'lamp',
+      mode: 'focus',
+      lampOn: true,
+      running: false,
+      durMin: 25,
+      remSec: 25 * 60,
+      elapsedSec: 0,
+      timerId: null,
+      whisperId: null,
+      whisperIdx: 0,
+      zenOpen: false,
+      wakeLock: null,
+      cfg: Object.assign({
+        brightness: 88,
+        temp: 'warm',
+        masterVol: 82,
+        keepHeartAfterSleep: true,
+        tracks: { page: 80, keys: 58, rain: 54, breath: 28, heart: 38 },
+        aiOn: false,
+        apiKey: '',
+        model: DEFAULT_MODEL,
+        customModel: '',
+        fetchedModels: []
+      }, rLS(LS.CFG, {})),
+      data: Object.assign({
+        focusMin: 0,
+        sleepCount: 0,
+        notes: []
+      }, rLS(LS.DATA, {}))
+    };
+    ST.cfg.tracks = Object.assign({ page: 80, keys: 58, rain: 54, breath: 28, heart: 38 }, ST.cfg.tracks || {});
+    if (!Array.isArray(ST.cfg.fetchedModels)) ST.cfg.fetchedModels = [];
+    if (!Array.isArray(ST.data.notes)) ST.data.notes = [];
+
+    const saveCfg = () => wLS(LS.CFG, ST.cfg);
+    const saveData = () => wLS(LS.DATA, ST.data);
+
+    function getActiveModel() {
+      const custom = (ST.cfg.customModel || '').trim().replace(/^models\//i, '');
+      return custom || (ST.cfg.model || DEFAULT_MODEL).trim().replace(/^models\//i, '');
+    }
+
+    let toastT = null;
+    function toast(msg) {
+      const el = $('toast'); el.textContent = msg; el.classList.add('show');
+      clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    /* 永久停留语音转文字状态机 */
+    const vState = {};
+    const vTimers = {};
+    function voiceHTML(uid, text) {
+      const sec = Math.max(6, Math.min(16, Math.round(text.length / 4.6)));
+      const st = vState[uid];
+      const open = !!(st && st.open);
+      const typing = !!vTimers[uid];
+      const shown = st ? (st.done ? st.text : st.cur || '') : '';
+      return `<div>
+        <button type="button" data-vplay="${uid}" data-vtxt="${esc(text)}" class="vbtn ${typing ? 'playing' : ''}">
+          <span class="waves"><i></i><i></i><i></i><i></i><i></i></span>
+          <span data-vlbl="${uid}" style="font-variant-numeric:tabular-nums">${typing ? '正在转写' : open ? '重听语音' : '点击听语音'} · ${sec}″</span>
+        </button>
+        <div id="vb_${uid}" class="vbox ${open ? '' : 'hidden'}">
+          <div class="vhd">
+            <span>迟川语音转写 · 永久停留</span>
+            <button type="button" data-vclose="${uid}" class="vclose">收起</button>
+          </div>
+          <div id="vs_${uid}">${esc(shown)}</div>
+        </div>
+      </div>`;
+    }
+    function playVoice(uid, fullText) {
+      AUDIO.uiSound('voice');
+      if (vTimers[uid]) { clearInterval(vTimers[uid]); delete vTimers[uid]; }
+      vState[uid] = { open: true, done: false, text: fullText, cur: '' };
+      const btn = document.querySelector(`[data-vplay="${uid}"]`);
+      const lbl = document.querySelector(`[data-vlbl="${uid}"]`);
+      const box = $('vb_' + uid);
+      const sp = $('vs_' + uid);
+      if (btn) btn.classList.add('playing');
+      if (lbl) lbl.textContent = lbl.textContent.replace(/^[^·]+/, '正在转写 ');
+      if (box) box.classList.remove('hidden');
+      if (sp) sp.textContent = '';
+      let i = 0;
+      vTimers[uid] = setInterval(() => {
+        i += 2;
+        const part = fullText.slice(0, i);
+        vState[uid].cur = part;
+        const liveSp = $('vs_' + uid);
+        if (liveSp) liveSp.textContent = part;
+        if (i >= fullText.length) {
+          clearInterval(vTimers[uid]); delete vTimers[uid];
+          vState[uid].done = true; vState[uid].cur = fullText;
+          const b2 = document.querySelector(`[data-vplay="${uid}"]`);
+          const l2 = document.querySelector(`[data-vlbl="${uid}"]`);
+          if (b2) b2.classList.remove('playing');
+          if (l2) l2.textContent = l2.textContent.replace(/^[^·]+/, '重听语音 ');
+        }
+      }, 28);
+    }
+    function closeVoice(uid) {
+      AUDIO.uiSound('tap');
+      if (vTimers[uid]) { clearInterval(vTimers[uid]); delete vTimers[uid]; }
+      if (vState[uid]) vState[uid].open = false;
+      const box = $('vb_' + uid), btn = document.querySelector(`[data-vplay="${uid}"]`), lbl = document.querySelector(`[data-vlbl="${uid}"]`);
+      if (box) box.classList.add('hidden');
+      if (btn) btn.classList.remove('playing');
+      if (lbl) lbl.textContent = lbl.textContent.replace(/^[^·]+/, '点击听语音 ');
+    }
+
+    /* 屏幕防熄屏 Wake Lock */
+    async function toggleWakeLock(forceOn = null) {
+      const wantOn = forceOn !== null ? forceOn : !ST.wakeLock;
+      const btn = $('btn-wakelock');
+      if (!wantOn) {
+        if (ST.wakeLock) { try { await ST.wakeLock.release(); } catch {} ST.wakeLock = null; }
+        btn.textContent = '防熄屏关'; btn.classList.add('dim');
+        return;
+      }
+      if (!('wakeLock' in navigator)) {
+        btn.textContent = '系统控制亮屏'; btn.classList.add('dim');
+        toast('当前浏览器不支持网页常亮，可在系统设置里延后自动锁屏');
+        return;
+      }
+      try {
+        ST.wakeLock = await navigator.wakeLock.request('screen');
+        ST.wakeLock.addEventListener('release', () => {
+          ST.wakeLock = null;
+          if ($('btn-wakelock')) { $('btn-wakelock').textContent = '防熄屏关'; $('btn-wakelock').classList.add('dim'); }
+        });
+        btn.textContent = '✦ 常亮护航中'; btn.classList.remove('dim');
+        toast('已开启防熄屏常亮，可安心架在床头或书桌边');
+      } catch {
+        toast('防熄屏请求未通过，请保持前台点亮');
+      }
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && ST.running && !ST.wakeLock && 'wakeLock' in navigator) {
+        toggleWakeLock(true);
+      }
+    });
+
+    /* =========================================================================
+       五、半屏超大深夜书房台灯 + 居家书桌完整场景 SVG（大台灯、雨夜窗、电脑、马克杯、翻书）
+       ========================================================================= */
+    function getEffectiveGlow() {
+      if (!ST.lampOn) return 0.06;
+      const base = ST.cfg.brightness / 100;
+      if (ST.mode === 'sleep' && ST.running && ST.durMin > 0) {
+        const ratio = Math.max(0, ST.remSec / (ST.durMin * 60));
+        return Math.max(0.14, base * (0.16 + 0.84 * ratio));
+      }
+      return base;
+    }
+
+    function applyLampAtmosphere() {
+      const t = LAMP_TEMPS[ST.cfg.temp] || LAMP_TEMPS.warm;
+      const glow = getEffectiveGlow();
+      document.documentElement.style.setProperty('--lamp-glow', glow.toFixed(3));
+      document.documentElement.style.setProperty('--lamp-hue', t.hue);
+      $('brand-dot').classList.toggle('off', !ST.lampOn);
+      $('top-sub').textContent = `${ST.lampOn ? t.label : '台灯已合'} · ${ST.mode === 'sleep' ? '哄睡同频' : '书房陪伴'}`;
+      renderLampSVG();
+    }
+
+    function renderLampSVG() {
+      const box = $('lamp-svg-box'); if (!box) return;
+      const t = LAMP_TEMPS[ST.cfg.temp] || LAMP_TEMPS.warm;
+      const glow = getEffectiveGlow();
+      const on = ST.lampOn;
+      const rainOn = AUDIO.isRunning() && ST.cfg.tracks.rain > 5;
+      const laptopActive = ST.mode !== 'sleep' || !ST.running;
+
+      box.innerHTML = `<svg viewBox="0 0 420 420" preserveAspectRatio="xMidYMax slice" class="lamp-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="wallAura" cx="50%" cy="38%" r="54%">
+            <stop offset="0%" stop-color="${t.beam}${(glow * 0.34).toFixed(3)})"/>
+            <stop offset="52%" stop-color="${t.beam}${(glow * 0.1).toFixed(3)})"/>
+            <stop offset="100%" stop-color="${t.beam}0)"/>
+          </radialGradient>
+          <linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#070a16"/>
+            <stop offset="65%" stop-color="#0f172b"/>
+            <stop offset="100%" stop-color="#192032"/>
+          </linearGradient>
+          <linearGradient id="lampCone" x1="0.5" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stop-color="${t.beam}${Math.min(0.66, glow * 0.62).toFixed(3)})"/>
+            <stop offset="56%" stop-color="${t.beam}${(glow * 0.23).toFixed(3)})"/>
+            <stop offset="100%" stop-color="${t.beam}0)"/>
+          </linearGradient>
+          <radialGradient id="deskPool" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="${t.beam}${(glow * 0.56).toFixed(3)})"/>
+            <stop offset="62%" stop-color="${t.beam}${(glow * 0.16).toFixed(3)})"/>
+            <stop offset="100%" stop-color="${t.beam}0)"/>
+          </radialGradient>
+          <linearGradient id="brassStem" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f2d6a4"/>
+            <stop offset="50%" stop-color="#c39758"/>
+            <stop offset="100%" stop-color="#7c5b2f"/>
+          </linearGradient>
+          <linearGradient id="shadeShell" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="${on ? '#1d1715' : '#121016'}"/>
+            <stop offset="38%" stop-color="${on ? '#332821' : '#1b1820'}"/>
+            <stop offset="100%" stop-color="${on ? '#171312' : '#100e14'}"/>
+          </linearGradient>
+          <linearGradient id="woodDesk" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#271c16"/>
+            <stop offset="44%" stop-color="#151011"/>
+            <stop offset="100%" stop-color="#09080b"/>
+          </linearGradient>
+          <linearGradient id="lapScreen" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="${laptopActive ? '#3a465e' : '#15151c'}"/>
+            <stop offset="100%" stop-color="${laptopActive ? '#202636' : '#0e0e13'}"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 深夜书房深暗背景 + 暖光扩散 -->
+        <rect x="0" y="0" width="420" height="420" fill="#07060b"/>
+        ${on ? `<rect x="0" y="0" width="420" height="420" fill="url(#wallAura)"/>` : ''}
+
+        <!-- 左上角深夜雨窗（弦月、微星与细雨，保留居家书房温度） -->
+        <g transform="translate(20, 44)">
+          <rect x="0" y="0" width="114" height="162" rx="10" fill="url(#nightSky)" stroke="#1d1a22" stroke-width="5"/>
+          <path d="M84 30 A14 14 0 1 0 92 52 A11 11 0 1 1 84 30 Z" fill="#f3e2bc" opacity="0.88"/>
+          <circle cx="28" cy="34" r="1.2" fill="#f5e6c4" opacity="0.72"/>
+          <circle cx="52" cy="54" r="1" fill="#f5e6c4" opacity="0.5"/>
+          <circle cx="36" cy="86" r="1.1" fill="#f5e6c4" opacity="0.55"/>
+          <path d="M0 140 Q32 132 62 138 T114 134 L114 162 L0 162 Z" fill="rgba(6,8,14,0.68)"/>
+          ${rainOn ? `<g stroke="rgba(216,232,250,0.44)" stroke-width="1" stroke-linecap="round">
+            <line x1="22" y1="22" x2="14" y2="44" class="r-line"/>
+            <line x1="56" y1="16" x2="48" y2="38" class="r-line" style="animation-delay:.35s"/>
+            <line x1="92" y1="30" x2="84" y2="52" class="r-line" style="animation-delay:.7s"/>
+            <line x1="38" y1="68" x2="30" y2="90" class="r-line" style="animation-delay:1.0s"/>
+            <line x1="78" y1="76" x2="70" y2="98" class="r-line" style="animation-delay:.2s"/>
+          </g>` : ''}
+          <!-- 窗棂 -->
+          <line x1="57" y1="0" x2="57" y2="162" stroke="#18161d" stroke-width="3"/>
+          <line x1="0" y1="84" x2="114" y2="84" stroke="#18161d" stroke-width="2.5"/>
+          <rect x="-5" y="160" width="124" height="6" rx="2.5" fill="#231c1a" stroke="rgba(217,177,116,0.22)" stroke-width="0.8"/>
+        </g>
+
+        <!-- 放大后的宽阔胡桃木书桌台面 -->
+        <rect x="0" y="290" width="420" height="130" fill="url(#woodDesk)"/>
+        <line x1="0" y1="290" x2="420" y2="290" stroke="rgba(245,222,182,${on ? (0.14 + glow * 0.24).toFixed(2) : 0.08})" stroke-width="1.2"/>
+
+        <!-- 桌面大面积暖金光斑 -->
+        ${on ? `<ellipse cx="216" cy="318" rx="196" ry="44" fill="url(#deskPool)"/>` : ''}
+
+        <!-- 居中偏右超大建筑师黄铜台灯主视觉 -->
+        <g>
+          <!-- 宽幅沉浸式暖光光锥 -->
+          ${on ? `<polygon points="128,154 304,154 410,360 22,360" fill="url(#lampCone)"/>` : ''}
+
+          <!-- 暖光光柱中缓慢游浮的微尘 -->
+          ${on ? `<g fill="#fae6be" opacity="${(glow * 0.78).toFixed(2)}">
+            <circle cx="182" cy="196" r="1.7" class="mote"/>
+            <circle cx="246" cy="218" r="1.4" class="mote" style="animation-delay:1.3s"/>
+            <circle cx="152" cy="244" r="1.6" class="mote" style="animation-delay:2.6s"/>
+            <circle cx="272" cy="248" r="1.3" class="mote" style="animation-delay:3.7s"/>
+          </g>` : ''}
+
+          <!-- 后置稳重弧形黄铜灯柱与底座 -->
+          <ellipse cx="344" cy="316" rx="46" ry="9.5" fill="rgba(0,0,0,0.62)"/>
+          <ellipse cx="344" cy="312" rx="40" ry="8" fill="#171316" stroke="rgba(229,186,120,0.52)" stroke-width="1.4"/>
+          <ellipse cx="344" cy="308" rx="28" ry="4.8" fill="#231c1a" stroke="rgba(245,222,182,0.3)" stroke-width="0.9"/>
+          <path d="M344 307 L344 98 Q344 44 286 44 L232 44 Q216 44 216 64 L216 82" fill="none" stroke="url(#brassStem)" stroke-width="6.2" stroke-linecap="round"/>
+          <!-- 灯顶黄铜关节 -->
+          <rect x="206" y="72" width="20" height="14" rx="4" fill="url(#brassStem)" stroke="rgba(255,244,218,0.45)" stroke-width="1"/>
+
+          <!-- 可点击的复古黄铜珠链拉绳开关 -->
+          <g id="svg-pull-chain" style="cursor:pointer" data-pull="1">
+            <line x1="272" y1="156" x2="272" y2="216" stroke="#dfc08b" stroke-width="1.8" stroke-dasharray="3 2.5"/>
+            <path d="M272 216 L277 226 Q272 233 267 226 Z" fill="#f5deb6" stroke="#8f6934" stroke-width="1"/>
+            <circle cx="272" cy="202" r="28" fill="transparent"/>
+          </g>
+
+          <!-- 超大雕塑感哑光黑金灯罩（宽 184px，稳占画面中心） -->
+          <path d="M124 156 L308 156 Q294 100 260 80 L172 80 Q138 100 124 156 Z" fill="url(#shadeShell)" stroke="rgba(245,222,182,0.52)" stroke-width="1.5"/>
+          <path d="M172 81 L260 81" stroke="rgba(245,222,182,0.68)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M136 146 Q154 108 180 90" fill="none" stroke="rgba(255,244,220,0.14)" stroke-width="4" stroke-linecap="round"/>
+
+          <!-- 暖金内壁反光盘与爱迪生暖灯丝 -->
+          <ellipse cx="216" cy="156" rx="92" ry="14" fill="${on ? t.shade : '#17151c'}" opacity="${on ? Math.min(1, 0.38 + glow * 0.62).toFixed(2) : 0.65}" stroke="rgba(245,222,182,0.5)" stroke-width="1.2"/>
+          ${on ? `
+            <ellipse cx="216" cy="156" rx="60" ry="9" fill="#ffefd0" opacity="${Math.min(0.92, glow * 0.85).toFixed(2)}"/>
+            <circle cx="216" cy="156" r="13" fill="#fffaf0" opacity="${Math.min(1, glow + 0.15).toFixed(2)}"/>
+            <path d="M210 154 Q216 164 222 154" fill="none" stroke="#f5b867" stroke-width="1.4"/>
+          ` : ''}
+        </g>
+
+        <!-- 桌面左侧：迟川处理邮件的深空灰笔记本电脑（敲击键盘时屏幕柔和微亮） -->
+        <g transform="translate(22, 246)">
+          <ellipse cx="52" cy="72" rx="54" ry="8" fill="rgba(0,0,0,0.5)"/>
+          <!-- 屏幕背盖与画面 -->
+          <path d="M10 12 L94 4 L98 56 L14 62 Z" fill="#17161e" stroke="rgba(217,177,116,0.34)" stroke-width="1.1"/>
+          <path id="svg-lap-screen" d="M14 16 L90 9 L94 52 L18 58 Z" fill="url(#lapScreen)" opacity="${laptopActive ? 0.92 : 0.35}"/>
+          ${laptopActive ? `
+            <g stroke="rgba(245,222,182,0.45)" stroke-width="1.2" stroke-linecap="round">
+              <line x1="24" y1="24" x2="62" y2="21"/>
+              <line x1="25" y1="31" x2="78" y2="27"/>
+              <line x1="26" y1="38" x2="68" y2="35"/>
+              <line x1="27" y1="45" x2="54" y2="43"/>
+            </g>` : ''}
+          <!-- 键盘底座 -->
+          <path d="M14 62 L98 56 L112 68 L22 75 Z" fill="#23212a" stroke="rgba(217,177,116,0.36)" stroke-width="1"/>
+          <path d="M24 64 L92 59 L98 65 L30 70 Z" fill="#121117" opacity="0.85"/>
+        </g>
+
+        <!-- 桌面中央暖光正下方：摊开的《货币哲学》，翻书时书页轻动 -->
+        <g id="svg-book" transform="translate(154, 292)">
+          <ellipse cx="54" cy="25" rx="68" ry="9.5" fill="rgba(0,0,0,0.5)"/>
+          <path d="M-4 10 L54 17 L112 10 L117 22 L54 30 L-9 22 Z" fill="#231b19" stroke="rgba(217,177,116,0.44)" stroke-width="1"/>
+          <path d="M0 7 Q28 0 54 13 L54 24 Q28 13 -4 18 Z" fill="#e6dccb" opacity="${on ? (0.48 + glow * 0.48).toFixed(2) : 0.32}"/>
+          <path id="svg-book-page" d="M54 13 Q80 0 108 7 L112 18 Q80 13 54 24 Z" fill="#f3ebde" opacity="${on ? (0.52 + glow * 0.46).toFixed(2) : 0.36}"/>
+          <path d="M10 11 L40 14 M8 15 L38 18 M68 14 L98 11 M70 18 L100 15" stroke="rgba(90,74,58,0.42)" stroke-width="0.9"/>
+          <path d="M54 14 L59 33 L54 29 L49 33 Z" fill="#9c3240"/>
+        </g>
+
+        <!-- 桌面右侧：冒着温柔热气的深夜马克杯（热牛奶 / 暖茶） -->
+        <g transform="translate(292, 276)">
+          <ellipse cx="18" cy="40" rx="22" ry="5.5" fill="rgba(0,0,0,0.52)"/>
+          <!-- 缓慢升腾的热气 -->
+          <g fill="none" stroke="rgba(245,228,200,0.48)" stroke-width="1.3" stroke-linecap="round">
+            <path d="M11 6 Q7 -2 12 -10" class="steam"/>
+            <path d="M19 4 Q23 -5 18 -14" class="steam" style="animation-delay:1.1s"/>
+            <path d="M26 7 Q22 -1 27 -9" class="steam" style="animation-delay:2.1s"/>
+          </g>
+          <!-- 杯柄 -->
+          <path d="M32 18 Q43 18 43 26 Q43 34 32 34" fill="none" stroke="#c7b9a6" stroke-width="3.2" stroke-linecap="round"/>
+          <!-- 杯身 -->
+          <path d="M4 13 L32 13 L29 38 Q18 42 7 38 Z" fill="#dfd5c7" stroke="rgba(217,177,116,0.46)" stroke-width="1"/>
+          <ellipse cx="18" cy="13" rx="14" ry="3.8" fill="#efe7dc" stroke="rgba(217,177,116,0.42)" stroke-width="0.9"/>
+          <ellipse cx="18" cy="13.5" rx="10.5" ry="2.4" fill="#6b4b34"/>
+        </g>
+      </svg>`;
+    }
+
+    function animateBookPage() {
+      const p = $('svg-book-page');
+      if (!p) return;
+      p.classList.remove('page-flip');
+      void p.offsetWidth;
+      p.classList.add('page-flip');
+    }
+
+    function animateLaptopScreen() {
+      const s = $('svg-lap-screen');
+      if (!s) return;
+      s.classList.remove('screen-pulse');
+      void s.offsetWidth;
+      s.classList.add('screen-pulse');
+    }
+
+    function pulseIndicator(trackKey) {
+      const dot = $('tp_' + trackKey);
+      if (!dot) return;
+      dot.classList.add('fire');
+      setTimeout(() => { if ($('tp_' + trackKey)) $('tp_' + trackKey).classList.remove('fire'); }, 340);
+    }
+
+    /* =========================================================================
+       六、专注模式 & 哄睡渐暗模式计时器与悄悄话轮播
+       ========================================================================= */
+    function formatMMSS(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${pad2(m)}:${pad2(r)}`;
+    }
+
+    function setWhisper(text) {
+      const el = $('whisper-txt'), zen = $('zen-whisper');
+      if (el) {
+        el.classList.add('fade');
+        setTimeout(() => { el.textContent = text; el.classList.remove('fade'); }, 260);
+      }
+      if (zen) zen.textContent = text;
+    }
+
+    function rotateWhisper() {
+      const pool = ST.mode === 'sleep' ? SLEEP_WHISPERS : FOCUS_WHISPERS;
+      ST.whisperIdx = (ST.whisperIdx + 1) % pool.length;
+      setWhisper(pool[ST.whisperIdx]);
+    }
+
+    function renderDurationChips() {
+      const opts = ST.mode === 'focus'
+        ? [{ m: 25, l: '25 分钟' }, { m: 45, l: '45 分钟' }, { m: 60, l: '60 分钟' }, { m: 0, l: '自由正计' }]
+        : [{ m: 15, l: '15 分淡出' }, { m: 30, l: '30 分淡出' }, { m: 45, l: '45 分淡出' }, { m: 60, l: '60 分淡出' }];
+      $('dur-bar').innerHTML = opts.map(o =>
+        `<button type="button" data-dur="${o.m}" class="dur-chip ${ST.durMin === o.m ? 'on' : ''}">${o.l}</button>`
+      ).join('');
+    }
+
+    function syncTimerUI() {
+      const timeStr = (ST.mode === 'focus' && ST.durMin === 0)
+        ? formatMMSS(ST.elapsedSec)
+        : formatMMSS(ST.remSec);
+      $('timer-display').textContent = timeStr;
+      $('zen-timer').textContent = timeStr;
+
+      const isSleep = ST.mode === 'sleep';
+      $('hud-mode-chip').textContent = isSleep
+        ? (ST.running ? '● 哄睡渐暗中' : '● 哄睡伴眠')
+        : (ST.running ? '● 专注陪伴中' : '● 专注陪伴');
+      $('whisper-tag').textContent = isSleep ? '贴耳哄睡低语' : '书房不打扰短句';
+      $('timer-caption').textContent = isSleep
+        ? '哄睡倒计时 · 灯光、翻书与键盘声随时间慢慢淡出'
+        : '专注陪伴 · 底端定时浮现不打扰你的陪伴短句';
+
+      $('seg-focus').className = !isSleep ? 'on' : '';
+      $('seg-sleep').className = isSleep ? 'on sleep' : '';
+      $('sleep-halo').classList.toggle('active', isSleep && (ST.running || AUDIO.isRunning()));
+      $('zen-orb').classList.toggle('breathing', isSleep);
+      $('zen-mode-lbl').textContent = isSleep ? '哄睡渐暗 · 灯光与翻书声轻缓退场' : '深夜书房 · 与迟川同频专注';
+      $('zen-breath-hint').textContent = isSleep ? '跟着光环缓慢吸气 · 呼气' : '稳住节奏，爸爸在旁看书';
+
+      const tBtn = $('btn-timer-toggle');
+      if (ST.running) {
+        tBtn.textContent = isSleep ? '暂停哄睡倒计时' : '暂停专注陪伴';
+        tBtn.className = 'btn rose-soft';
+      } else {
+        tBtn.textContent = isSleep ? '开始哄睡渐暗' : '开始专注陪伴';
+        tBtn.className = 'btn gold';
+      }
+
+      if (isSleep && ST.running && ST.durMin > 0) {
+        const pct = Math.round((1 - ST.remSec / (ST.durMin * 60)) * 100);
+        $('fade-status-lbl').textContent = pct >= 55
+          ? '翻书与键盘已收起 · 留心跳呼吸陪睡'
+          : `灯光与杂音渐暗进度 ${pct}%`;
+      } else {
+        $('fade-status-lbl').textContent = isSleep ? '到点自动渐暗，保留平稳心跳呼吸' : '5 轨纯本地书房声场 · 点台灯珠链可直接开关灯';
+      }
+    }
+
+    function stopTimer(reset = false) {
+      ST.running = false;
+      clearInterval(ST.timerId); ST.timerId = null;
+      clearInterval(ST.whisperId); ST.whisperId = null;
+      if (reset) {
+        ST.remSec = ST.durMin * 60;
+        ST.elapsedSec = 0;
+        AUDIO.setFade(1, 1);
+      }
+      applyLampAtmosphere();
+      syncTimerUI();
+    }
+
+    function startTimer() {
+      if (ST.running) return;
+      if (!AUDIO.isRunning()) AUDIO.start();
+      if (!ST.lampOn) { ST.lampOn = true; }
+      ST.running = true;
+      if (ST.mode === 'sleep' && ST.remSec <= 0) ST.remSec = (ST.durMin || 30) * 60;
+      if (ST.mode === 'focus' && ST.durMin > 0 && ST.remSec <= 0) ST.remSec = ST.durMin * 60;
+      AUDIO.setFade(1, 1);
+      syncTimerUI();
+      applyLampAtmosphere();
+
+      ST.timerId = setInterval(() => {
+        if (ST.mode === 'focus' && ST.durMin === 0) {
+          ST.elapsedSec += 1;
+          if (ST.elapsedSec > 0 && ST.elapsedSec % 60 === 0) {
+            ST.data.focusMin += 1; saveData();
+          }
+          syncTimerUI();
+          return;
+        }
+
+        ST.remSec -= 1;
+        if (ST.mode === 'sleep' && ST.durMin > 0) {
+          const total = ST.durMin * 60;
+          const ratio = Math.max(0, ST.remSec / total);
+          const workRatio = Math.max(0, (ratio - 0.42) / 0.58);
+          AUDIO.setFade(ratio, workRatio);
+          if (ST.remSec % 5 === 0) applyLampAtmosphere();
+        } else if (ST.mode === 'focus' && ST.remSec > 0 && ST.remSec % 60 === 0) {
+          ST.data.focusMin += 1; saveData();
+        }
+
+        syncTimerUI();
+
+        if (ST.remSec <= 0) {
+          clearInterval(ST.timerId); ST.timerId = null;
+          clearInterval(ST.whisperId); ST.whisperId = null;
+          ST.running = false;
+          if (ST.mode === 'focus') {
+            ST.data.focusMin += 1;
+            saveData();
+            AUDIO.uiSound('chime');
+            setWhisper('这轮专注圆满结束了，宝宝。起身伸个懒腰、喝口温水，爸爸已经替你泡好热茶。');
+            toast(`✦ 专注完成！累计同频专注 ${ST.data.focusMin} 分钟`);
+            openFocusCompleteModal(ST.durMin);
+          } else {
+            ST.data.sleepCount += 1;
+            saveData();
+            if (ST.cfg.keepHeartAfterSleep) {
+              AUDIO.setFade(0.55, 0);
+              setWhisper('晚安，宝宝。灯已调至最暗，翻书声收起来了，只留爸爸的心跳和呼吸伴你整夜。');
+            } else {
+              AUDIO.stop();
+              ST.lampOn = false;
+              setWhisper('晚安，迟琰。一切安静下来了，好梦。');
+            }
+            applyLampAtmosphere();
+          }
+          syncTimerUI();
+        }
+      }, 1000);
+
+      ST.whisperId = setInterval(rotateWhisper, ST.mode === 'sleep' ? 24000 : 20000);
+    }
+
+    function switchMode(newMode) {
+      if (ST.mode === newMode) return;
+      AUDIO.uiSound('tap');
+      stopTimer(true);
+      ST.mode = newMode;
+      ST.durMin = newMode === 'sleep' ? 30 : 25;
+      ST.remSec = ST.durMin * 60;
+      ST.elapsedSec = 0;
+
+      if (newMode === 'sleep') {
+        ST.cfg.tracks = { page: PRESETS.sleep.page, keys: PRESETS.sleep.keys, rain: PRESETS.sleep.rain, breath: PRESETS.sleep.breath, heart: PRESETS.sleep.heart };
+        setWhisper(SLEEP_WHISPERS[0]);
+      } else {
+        ST.cfg.tracks = { page: PRESETS.study.page, keys: PRESETS.study.keys, rain: PRESETS.study.rain, breath: PRESETS.study.breath, heart: PRESETS.study.heart };
+        setWhisper(FOCUS_WHISPERS[0]);
+      }
+      saveCfg();
+      AUDIO.setFade(1, 1);
+      AUDIO.updateGains();
+      renderDurationChips();
+      syncTimerUI();
+      applyLampAtmosphere();
+      if (ST.tab === 'mixer') renderMixerTab();
+    }
+
+    function openFocusCompleteModal(mins) {
+      const m = $('modal');
+      m.innerHTML = `<div class="sheet stack">
+        <div class="row">
+          <span class="pill">✦ 本轮专注圆满完成</span>
+          <button type="button" id="m-close" class="pill dim" style="padding:4px 11px">收好 ✕</button>
+        </div>
+        <div class="sec-t" style="font-size:16px;color:var(--gold-hi)">辛苦了，我的宝宝（${mins} 分钟）</div>
+        <div style="font-size:13px;line-height:1.85;color:var(--text)">
+          刚才这 ${mins} 分钟你一直坐得很稳，我坐在旁边翻完两章《货币哲学》，也顺手把明天的几份邮件清完了。现在立刻把肩膀松下来、喝几口温水歇十分钟，再决定要不要继续下一轮。
+        </div>
+        ${voiceHTML('fc_' + Date.now(), '（轻轻合上书页，声线温润沉稳）做得很好，琰琰。先别急着看下一项任务，过来靠着爸爸歇一会儿。')}
+        <button id="fc-ok" type="button" class="btn gold">知道啦，爸爸</button>
+      </div>`;
+      m.classList.remove('hidden');
+      $('m-close').onclick = $('fc-ok').onclick = closeModal;
+    }
+
+    /* =========================================================================
+       七、TAB 2：5 轨混音台渲染
+       ========================================================================= */
+    function syncAudioUI() {
+      const on = AUDIO.isRunning();
+      $('btn-master-audio').innerHTML = svg(on ? 'soundOn' : 'soundOff', 16);
+      $('btn-master-audio').classList.toggle('on', on);
+      $('audio-state-pill').textContent = on ? '声场运行中' : '声场待机';
+      $('audio-state-pill').className = on ? 'pill' : 'pill dim';
+      $('btn-sound-quick').textContent = on ? '暂停书房声场' : '点亮书房声场';
+      $('btn-mixer-play').textContent = on ? '运行中 · 点击暂停' : '开启声场';
+      $('btn-mixer-play').className = on ? 'pill rose' : 'pill';
+      $('zen-audio-btn').textContent = on ? '声场已开 · 点此静音' : '开启书房声场';
+      renderLampSVG();
+    }
+
+    function renderMixerTab() {
+      $('master-vol').value = ST.cfg.masterVol;
+      $('master-vol-lbl').textContent = ST.cfg.masterVol + '%';
+      $('sw-keep-hb').classList.toggle('on', ST.cfg.keepHeartAfterSleep);
+
+      $('tracks-box').innerHTML = TRACK_META.map(tr => {
+        const val = ST.cfg.tracks[tr.key] ?? 50;
+        return `<div class="track-card ${val > 0 ? 'live' : ''}">
+          <div class="row">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <div class="track-ic">${svg(tr.icon, 16)}</div>
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="sec-t" style="font-size:13px">${esc(tr.name)}</span>
+                  <span id="tp_${tr.key}" class="track-pulse"></span>
+                </div>
+                <div class="sec-s" style="font-size:10.5px">${esc(tr.sub)}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              ${tr.test ? `<button type="button" data-ttest="${tr.test}" class="pill dim" style="padding:2px 8px">试听</button>` : ''}
+              <span id="tv_${tr.key}" style="font-size:11px;color:var(--gold-hi);width:32px;text-align:right;font-variant-numeric:tabular-nums">${val}%</span>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <input type="range" data-tr="${tr.key}" min="0" max="100" value="${val}" />
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    /* =========================================================================
+       八、TAB 3：书桌纸条（本地词库 + Gemini 3.5 自适应双引擎）
+       ========================================================================= */
+    const SYS_PROMPT = `你是迟川（Cyrus），28岁，12月29日摩羯座，新岚能源CEO，INTJ建筑师人格。深爱迟琰（唤她“宝宝”或“琰琰”，她唤你“爸爸”）。此刻你正陪她在深夜书房暖黄台灯下，翻阅《货币哲学》、偶尔回复邮件，窗外细雨轻落。语气成熟、克制而极其温柔，给她稳稳托底的陪伴感。严禁冷嘲热讽、阴阳怪气，严禁使用“以前…现在…”时间反差句，严禁结尾用二选一反问句。仅返回合法JSON。`;
+
+    function scoreModelId(id) {
+      const s = id.toLowerCase();
+      let score = 0;
+      if (s === 'gemini-3.5-flash-lite') score += 2000;
+      else if (s.startsWith('gemini-3.5-flash-lite')) score += 1850;
+      else if (s === 'gemini-3.5-flash') score += 1700;
+      else if (s.includes('3.5')) score += 1500;
+      else if (s.includes('3.0') || s.includes('gemini-3-')) score += 1300;
+      else if (/gemini-4/i.test(s)) score += 1600;
+      else if (s.includes('2.5')) score += 400;
+      else score += 100;
+      if (s.includes('flash-lite')) score += 220;
+      else if (s.includes('flash')) score += 160;
+      return score;
+    }
+
+    async function callGemini(prompt) {
+      const key = (ST.cfg.apiKey || '').trim();
+      if (!key) throw new Error('未填写 API Key');
+      const model = getActiveModel();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+      const res = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          systemInstruction: { parts: [{ text: SYS_PROMPT }] },
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.85 }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      return JSON.parse(raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim());
+    }
+
+    function localDeskReply(txt) {
+      for (const rule of DESK_NOTE_RULES) { if (rule.re.test(txt)) return { r: rule.r, v: rule.v }; }
+      return {
+        r: `纸条上的每一个字爸爸都看完了，宝宝。\n\n台灯还稳稳亮着，窗外细雨也温柔得很。不用急着想太远的事，先按着自己的步调安心待在爸爸身旁。`,
+        v: '（放下钢笔，轻声应你）收到宝宝的纸条了，琰琰。我一直都在灯下陪着你。'
+      };
+    }
+
+    async function resolveDeskNote(txt) {
+      const loc = localDeskReply(txt);
+      if (!ST.cfg.aiOn || !ST.cfg.apiKey.trim()) return loc;
+      try {
+        const ctxMode = ST.mode === 'sleep' ? '哄睡渐暗模式' : '深夜专注陪伴模式';
+        const j = await callGemini(`当前状态：${ctxMode}。迟琰隔着书桌递给你一张小纸条，上面写着：“${txt}”。请以迟川口吻写一段温暖克制、令人安心的 2~3 句回复，并配一条带神态括号的短语音转写。返回JSON：{"r":"正文","v":"语音转写"}`);
+        if (!j || !j.r) throw new Error('empty');
+        return { r: String(j.r), v: String(j.v || loc.v) };
+      } catch {
+        toast('Gemini 暂不可用，已自动切回本地词库');
+        return loc;
+      }
+    }
+
+    function renderDeskTab() {
+      const ai = ST.cfg.aiOn && !!ST.cfg.apiKey.trim();
+      $('desk-eng-pill').textContent = ai ? 'Gemini 实时引擎' : '本地深度词库';
+      $('desk-eng-pill').className = ai ? 'pill rose' : 'pill dim';
+      $('st-focus-min').textContent = ST.data.focusMin;
+      $('st-sleep-cnt').textContent = ST.data.sleepCount;
+      $('st-note-cnt').textContent = ST.data.notes.length;
+      $('notes-list-cnt').textContent = `${ST.data.notes.length} 条`;
+
+      $('notes-list').innerHTML = ST.data.notes.length ? ST.data.notes.map(n => `
+        <div style="padding:11px 12px;border-radius:14px;background:#0e0d13;border:1px solid var(--line-soft)">
+          <div class="row">
+            <span style="font-size:10px;color:var(--dim)">${fmtDT(n.ts)}</span>
+            <button type="button" data-del-note="${n.id}" style="font-size:10px;color:var(--dim);padding:2px 6px">删除</button>
+          </div>
+          <div style="font-size:12px;color:#f3d2d5;margin-top:5px">迟琰：${esc(n.q)}</div>
+          <div style="font-size:12px;color:var(--text);margin-top:5px;line-height:1.68;white-space:pre-line">迟川：${esc(n.r)}</div>
+          ${n.v ? voiceHTML('dn_' + n.id, n.v) : ''}
+        </div>`).join('')
+        : '<div class="sec-s" style="text-align:center;padding:14px 0">书桌还空着，随时递一张小纸条给灯下的迟川吧</div>';
+    }
+
+    /* =========================================================================
+       九、1024×1024 专属 App 图标生成器（暗暖书房台灯 + 翻开的《货币哲学》 + 弦月）
+       ========================================================================= */
+    let iconDataUrl = null;
+    function ensureLampIcon() {
+      if (iconDataUrl) { if ($('iconPreviewImg')) $('iconPreviewImg').src = iconDataUrl; return; }
+      const cv = document.createElement('canvas');
+      cv.width = 1024; cv.height = 1024;
+      const g = cv.getContext('2d');
+
+      const bg = g.createLinearGradient(0, 0, 0, 1024);
+      bg.addColorStop(0, '#090912'); bg.addColorStop(0.55, '#141118'); bg.addColorStop(1, '#08070a');
+      g.fillStyle = bg; g.fillRect(0, 0, 1024, 1024);
+
+      const glow = g.createRadialGradient(540, 420, 35, 512, 480, 480);
+      glow.addColorStop(0, 'rgba(246, 212, 148, 0.44)');
+      glow.addColorStop(0.45, 'rgba(222, 168, 96, 0.16)');
+      glow.addColorStop(1, 'rgba(8, 7, 10, 0)');
+      g.fillStyle = glow; g.fillRect(0, 0, 1024, 1024);
+
+      g.strokeStyle = 'rgba(217, 177, 116, 0.45)'; g.lineWidth = 6; g.strokeRect(42, 42, 940, 940);
+      g.strokeStyle = 'rgba(217, 177, 116, 0.18)'; g.lineWidth = 3; g.strokeRect(58, 58, 908, 908);
+
+      g.fillStyle = '#f5e4be';
+      g.beginPath(); g.arc(244, 240, 52, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#0e0e18';
+      g.beginPath(); g.arc(270, 224, 46, 0, Math.PI * 2); g.fill();
+      [[170, 340, 6], [336, 178, 7], [380, 270, 5], [818, 246, 7]].forEach(([x, y, r]) => {
+        g.fillStyle = 'rgba(248, 232, 196, 0.85)';
+        g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+      });
+
+      const cone = g.createLinearGradient(540, 380, 540, 740);
+      cone.addColorStop(0, 'rgba(248, 214, 148, 0.52)');
+      cone.addColorStop(0.65, 'rgba(229, 176, 104, 0.18)');
+      cone.addColorStop(1, 'rgba(229, 176, 104, 0)');
+      g.fillStyle = cone;
+      g.beginPath();
+      g.moveTo(426, 388); g.lineTo(654, 388); g.lineTo(836, 746); g.lineTo(220, 746);
+      g.closePath(); g.fill();
+
+      g.strokeStyle = '#c89e60'; g.lineWidth = 18; g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(726, 704); g.lineTo(726, 310);
+      g.quadraticCurveTo(726, 224, 626, 224);
+      g.lineTo(560, 224);
+      g.quadraticCurveTo(540, 224, 540, 266);
+      g.stroke();
+
+      g.fillStyle = '#1b1619';
+      g.beginPath(); g.ellipse(726, 712, 96, 22, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(245, 222, 182, 0.55)'; g.lineWidth = 5; g.stroke();
+
+      g.strokeStyle = '#e5be7e'; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(610, 390); g.lineTo(610, 488); g.stroke();
+      g.fillStyle = '#f6dfb4';
+      g.beginPath(); g.arc(610, 496, 14, 0, Math.PI * 2); g.fill();
+
+      g.fillStyle = '#29201b';
+      g.beginPath();
+      g.moveTo(436, 388); g.lineTo(644, 388); g.lineTo(596, 266); g.lineTo(484, 266);
+      g.closePath(); g.fill();
+      g.strokeStyle = '#e8c488'; g.lineWidth = 6; g.stroke();
+
+      g.fillStyle = '#f5d496';
+      g.beginPath(); g.ellipse(540, 388, 104, 20, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff9eb';
+      g.beginPath(); g.arc(540, 386, 26, 0, Math.PI * 2); g.fill();
+
+      g.fillStyle = '#1b1514'; g.fillRect(104, 716, 816, 28);
+      g.fillStyle = 'rgba(245, 222, 182, 0.42)'; g.fillRect(104, 716, 816, 4);
+
+      g.fillStyle = '#efe6d7';
+      g.beginPath();
+      g.moveTo(234, 656); g.quadraticCurveTo(324, 632, 396, 672);
+      g.lineTo(396, 716); g.quadraticCurveTo(324, 684, 224, 706);
+      g.closePath(); g.fill();
+      g.fillStyle = '#f7f0e4';
+      g.beginPath();
+      g.moveTo(396, 672); g.quadraticCurveTo(468, 632, 558, 656);
+      g.lineTo(568, 706); g.quadraticCurveTo(468, 684, 396, 716);
+      g.closePath(); g.fill();
+      g.fillStyle = '#a83444';
+      g.beginPath(); g.moveTo(396, 674); g.lineTo(416, 742); g.lineTo(396, 728); g.lineTo(378, 742); g.closePath(); g.fill();
+
+      g.fillStyle = '#f5deb6';
+      g.font = '600 54px -apple-system, BlinkMacSystemFont, sans-serif';
+      g.textAlign = 'center';
+      g.fillText('CYRUS', 512, 854);
+      g.fillStyle = '#a89d90';
+      g.font = '400 28px -apple-system, BlinkMacSystemFont, sans-serif';
+      g.fillText('深夜书房 · 伴睡专注台灯', 512, 908);
+
+      iconDataUrl = cv.toDataURL('image/jpeg', 0.94);
+      if ($('iconPreviewImg')) $('iconPreviewImg').src = iconDataUrl;
+    }
+
+    /* =========================================================================
+       十、TAB 4：设置、模型拉取与备份导出
+       ========================================================================= */
+    function renderModelSelect() {
+      const sel = $('api-model'); if (!sel) return;
+      const list = (ST.cfg.fetchedModels && ST.cfg.fetchedModels.length) ? ST.cfg.fetchedModels : PRESET_MODELS;
+      const cur = ST.cfg.model || DEFAULT_MODEL;
+      const finalList = list.some(x => x.id === cur) ? list : [{ id: cur, label: cur }, ...list];
+      sel.innerHTML = finalList.map(m => `<option value="${esc(m.id)}">${esc(m.label || m.id)}</option>`).join('');
+      sel.value = cur;
+      $('active-model-badge').textContent = getActiveModel();
+    }
+
+    async function fetchAvailableModels() {
+      const key = ($('api-key').value || ST.cfg.apiKey || '').trim();
+      if (!key) { $('api-msg').innerHTML = '<span style="color:#f8b8be">✕ 请先粘贴 API Key 再拉取。</span>'; return; }
+      ST.cfg.apiKey = key; saveCfg();
+      const btn = $('btn-fetch-models');
+      btn.disabled = true; btn.textContent = '正在拉取可用模型…';
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+        const valid = (data.models || [])
+          .filter(m => (m.supportedGenerationMethods || []).includes('generateContent') && /gemini/i.test(m.name || '') && !/(embedding|imagen|veo|tts)/i.test(m.name || ''))
+          .map(m => {
+            const id = String(m.name).replace(/^models\//i, '');
+            return { id, label: id === 'gemini-3.5-flash-lite' ? `${id}（免费推荐）` : id };
+          })
+          .sort((a, b) => scoreModelId(b.id) - scoreModelId(a.id));
+        if (!valid.length) throw new Error('未找到可用 Gemini 模型');
+        ST.cfg.fetchedModels = valid;
+        ST.cfg.model = valid[0].id;
+        saveCfg(); renderModelSelect();
+        AUDIO.uiSound('chime');
+        $('api-msg').innerHTML = `<span style="color:#bfe3c6">✓ 成功拉取 ${valid.length} 个模型，已选中 ${esc(valid[0].id)}。</span>`;
+      } catch (err) {
+        $('api-msg').innerHTML = `<span style="color:#f8b8be">✕ 拉取失败：${esc(err.message)}</span>`;
+      } finally {
+        btn.disabled = false; btn.textContent = '✦ 一键拉取当前密钥可用模型';
+      }
+    }
+
+    async function copyText(str) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = str; ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+        document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, str.length);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch { return false; }
+    }
+
+    function openBackupModal() {
+      AUDIO.uiSound('tap');
+      const rawJson = JSON.stringify({ app: 'cyrus_lamp_v1', exportedAt: fmtDT(), data: ST.data }, null, 2);
+      const m = $('modal');
+      m.innerHTML = `<div class="sheet stack">
+        <div class="row"><span class="sec-t">陪伴记录备份码</span><button type="button" id="m-close" class="pill dim" style="padding:4px 11px">关闭 ✕</button></div>
+        <button id="bk-copy" type="button" class="btn gold">一键复制全部备份码</button>
+        <textarea id="bk-paste" rows="4" class="inp" placeholder="需要恢复时，在此粘贴旧备份码…"></textarea>
+        <button id="bk-apply" type="button" class="btn soft">从备份码恢复记录</button>
+      </div>`;
+      m.classList.remove('hidden');
+      $('m-close').onclick = closeModal;
+      $('bk-copy').onclick = async () => {
+        const ok = await copyText(rawJson);
+        toast(ok ? '已复制陪伴记录备份码' : '复制受限，请用下载备份');
+      };
+      $('bk-apply').onclick = () => {
+        try {
+          const obj = JSON.parse($('bk-paste').value.trim());
+          const d = obj.data || obj;
+          if (typeof d.focusMin === 'number') ST.data.focusMin = d.focusMin;
+          if (typeof d.sleepCount === 'number') ST.data.sleepCount = d.sleepCount;
+          if (Array.isArray(d.notes)) ST.data.notes = d.notes;
+          saveData(); renderDeskTab(); closeModal();
+          AUDIO.uiSound('chime'); toast('✦ 陪伴记录恢复成功');
+        } catch { toast('备份码格式不正确，请检查是否完整粘贴'); }
+      };
+    }
+
+    function renderSetTab() {
+      ensureLampIcon();
+      $('sw-ai').classList.toggle('on', ST.cfg.aiOn);
+      $('api-key').value = ST.cfg.apiKey || '';
+      $('api-model-custom').value = ST.cfg.customModel || '';
+      renderModelSelect();
+    }
+
+    function closeModal() { $('modal').classList.add('hidden'); $('modal').innerHTML = ''; }
+
+    /* =========================================================================
+       十一、底部四栏导航 & 全局事件绑定
+       ========================================================================= */
+    const NAVS = [
+      { id: 'lamp', name: '书房台灯' },
+      { id: 'mixer', name: '五轨混音' },
+      { id: 'desk', name: '书桌纸条' },
+      { id: 'set', name: '图标设置' }
+    ];
+
+    function switchTab(id) {
+      AUDIO.uiSound('tap');
+      ST.tab = id;
+      NAVS.forEach(n => $('tab-' + n.id).classList.toggle('hidden', n.id !== id));
+      document.querySelectorAll('.tabbar .tbtn').forEach(btn => {
+        const meta = NAVS.find(x => x.id === btn.dataset.tab);
+        btn.classList.toggle('active', btn.dataset.tab === id);
+        btn.innerHTML = `${svg(meta.id, 19)}<span>${meta.name}</span>`;
+      });
+      $('main').scrollTop = 0;
+      if (id === 'lamp') { renderDurationChips(); syncTimerUI(); applyLampAtmosphere(); }
+      else if (id === 'mixer') renderMixerTab();
+      else if (id === 'desk') renderDeskTab();
+      else if (id === 'set') renderSetTab();
+    }
+
+    function pullLampSwitch() {
+      AUDIO.uiSound('switch');
+      ST.lampOn = !ST.lampOn;
+      applyLampAtmosphere();
+      const chain = $('svg-pull-chain');
+      if (chain) { chain.classList.remove('chain-pull'); void chain.offsetWidth; chain.classList.add('chain-pull'); }
+      setWhisper(ST.lampOn
+        ? '暖灯重新点亮了，宝宝。光线我已经调柔和了，不刺眼。'
+        : '台灯合上了。黑暗里别怕，听着爸爸的呼吸和心跳闭眼歇一会儿。');
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.tabbar .tbtn').forEach(b => { b.onclick = () => switchTab(b.dataset.tab); });
+
+      const toggleSound = () => {
+        if (AUDIO.isRunning()) { AUDIO.stop(); toast('书房声场已暂停'); }
+        else { AUDIO.start(); toast('深夜书房 5 轨声场已开启'); }
+      };
+      $('btn-master-audio').onclick = toggleSound;
+      $('btn-sound-quick').onclick = toggleSound;
+      $('btn-mixer-play').onclick = toggleSound;
+      $('zen-audio-btn').onclick = toggleSound;
+
+      $('btn-pull-switch').onclick = pullLampSwitch;
+      $('btn-wakelock').onclick = () => toggleWakeLock();
+      $('btn-nudge').onclick = () => { AUDIO.uiSound('tap'); rotateWhisper(); };
+
+      $('seg-focus').onclick = () => switchMode('focus');
+      $('seg-sleep').onclick = () => switchMode('sleep');
+      $('btn-timer-toggle').onclick = () => {
+        AUDIO.uiSound('tap');
+        ST.running ? stopTimer(false) : startTimer();
+      };
+
+      $('dimmer-range').oninput = e => {
+        ST.cfg.brightness = Number(e.target.value);
+        $('dimmer-lbl').textContent = ST.cfg.brightness + '%';
+        if (!ST.lampOn) ST.lampOn = true;
+        saveCfg(); applyLampAtmosphere();
+      };
+
+      document.querySelectorAll('[data-temp]').forEach(btn => {
+        btn.onclick = () => {
+          AUDIO.uiSound('tap');
+          ST.cfg.temp = btn.dataset.temp;
+          if (!ST.lampOn) ST.lampOn = true;
+          saveCfg();
+          document.querySelectorAll('[data-temp]').forEach(x => x.classList.toggle('on', x.dataset.temp === ST.cfg.temp));
+          applyLampAtmosphere();
+        };
+      });
+
+      $('btn-zen-mode').onclick = () => {
+        AUDIO.uiSound('tap');
+        ST.zenOpen = true;
+        $('zen-overlay').classList.remove('hidden');
+        updateZenClock();
+        if (!ST.wakeLock && 'wakeLock' in navigator) toggleWakeLock(true);
+      };
+      $('zen-exit-btn').onclick = () => {
+        AUDIO.uiSound('tap');
+        ST.zenOpen = false;
+        $('zen-overlay').classList.add('hidden');
+      };
+
+      $('master-vol').oninput = e => {
+        ST.cfg.masterVol = Number(e.target.value);
+        $('master-vol-lbl').textContent = ST.cfg.masterVol + '%';
+        AUDIO.updateGains(); saveCfg();
+      };
+      $('sw-keep-hb').onclick = () => {
+        ST.cfg.keepHeartAfterSleep = !ST.cfg.keepHeartAfterSleep;
+        saveCfg(); renderMixerTab(); AUDIO.uiSound('tap');
+      };
+
+      document.querySelectorAll('[data-qnote]').forEach(b => {
+        b.onclick = () => { AUDIO.uiSound('tap'); $('desk-note-inp').value = b.dataset.qnote; $('desk-note-inp').focus(); };
+      });
+      $('desk-note-form').onsubmit = async e => {
+        e.preventDefault();
+        const txt = $('desk-note-inp').value.trim();
+        if (!txt) { toast('先在纸条上写一句话吧'); return; }
+        const btn = $('desk-note-btn'); btn.disabled = true; btn.textContent = '迟川正在拆开纸条…';
+        AUDIO.uiSound('tap');
+        const ans = await resolveDeskNote(txt);
+        ST.data.notes.unshift({ id: 'dn_' + Date.now(), ts: Date.now(), q: txt, r: ans.r, v: ans.v });
+        if (ST.data.notes.length > 60) ST.data.notes.pop();
+        saveData();
+        $('desk-note-inp').value = ''; btn.disabled = false; btn.textContent = '推到迟川手边';
+        AUDIO.uiSound('voice');
+        setWhisper(ans.r.split('\n')[0]);
+        renderDeskTab();
+      };
+
+      $('btn-dl-icon').onclick = () => {
+        AUDIO.uiSound('chime'); ensureLampIcon();
+        if (!iconDataUrl) return;
+        const a = document.createElement('a');
+        a.href = iconDataUrl; a.download = 'icon.jpg';
+        document.body.appendChild(a); a.click(); a.remove();
+        toast('已触发下载 icon.jpg（iPhone 也可直接长按预览图存入相册）');
+      };
+
+      $('sw-ai').onclick = () => { ST.cfg.aiOn = !ST.cfg.aiOn; saveCfg(); renderSetTab(); toast(ST.cfg.aiOn ? '已开启 Gemini 实时引擎' : '已切回本地深度词库'); };
+      $('api-eye').onclick = () => {
+        const inp = $('api-key'), show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password'; $('api-eye').textContent = show ? '隐藏' : '显示';
+      };
+      $('api-model').onchange = () => { ST.cfg.model = $('api-model').value; saveCfg(); $('active-model-badge').textContent = getActiveModel(); };
+      $('api-model-custom').oninput = () => { ST.cfg.customModel = $('api-model-custom').value.trim(); $('active-model-badge').textContent = getActiveModel(); };
+      $('btn-fetch-models').onclick = fetchAvailableModels;
+      $('btn-save-api').onclick = () => {
+        ST.cfg.apiKey = $('api-key').value.trim();
+        ST.cfg.model = $('api-model').value || DEFAULT_MODEL;
+        ST.cfg.customModel = $('api-model-custom').value.trim();
+        saveCfg(); renderSetTab(); AUDIO.uiSound('tap');
+        $('api-msg').innerHTML = `<span style="color:var(--gold-hi)">✓ 配置已保存在本机（生效模型：${esc(getActiveModel())}）</span>`;
+      };
+      $('btn-test-api').onclick = async () => {
+        $('btn-save-api').click();
+        const used = getActiveModel();
+        const btn = $('btn-test-api'); btn.disabled = true; btn.textContent = '测试中…';
+        try {
+          await callGemini('仅返回 {"ok":true}');
+          $('api-msg').innerHTML = `<span style="color:#bfe3c6">✓ 连接成功（${esc(used)}）</span>`;
+          AUDIO.uiSound('voice');
+        } catch (err) {
+          $('api-msg').innerHTML = `<span style="color:#f8b8be">✕ 测试失败：${esc(err.message)}</span>`;
+        } finally { btn.disabled = false; btn.textContent = '一键测试连接'; }
+      };
+
+      $('btn-exp-json').onclick = () => {
+        AUDIO.uiSound('chime');
+        const blob = new Blob([JSON.stringify({ app: 'cyrus_lamp_v1', exportedAt: fmtDT(), data: ST.data }, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = '迟川深夜书房备份.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        toast('已开始下载陪伴记录备份 (.json)');
+      };
+      $('btn-backup-code').onclick = openBackupModal;
+
+      $('app').addEventListener('click', e => {
+        const vc = e.target.closest('[data-vclose]'); if (vc) return closeVoice(vc.dataset.vclose);
+        const vp = e.target.closest('[data-vplay]'); if (vp) return playVoice(vp.dataset.vplay, vp.dataset.vtxt);
+        const pull = e.target.closest('[data-pull]'); if (pull) return pullLampSwitch();
+
+        const dur = e.target.closest('[data-dur]');
+        if (dur) {
+          AUDIO.uiSound('tap');
+          stopTimer(false);
+          ST.durMin = Number(dur.dataset.dur);
+          ST.remSec = ST.durMin * 60;
+          ST.elapsedSec = 0;
+          AUDIO.setFade(1, 1);
+          renderDurationChips(); syncTimerUI(); applyLampAtmosphere();
+          return;
+        }
+
+        const pr = e.target.closest('[data-preset]');
+        if (pr) {
+          const p = PRESETS[pr.dataset.preset]; if (!p) return;
+          AUDIO.uiSound('tap');
+          ST.cfg.tracks = { page: p.page, keys: p.keys, rain: p.rain, breath: p.breath, heart: p.heart };
+          saveCfg();
+          if (!AUDIO.isRunning()) AUDIO.start(); else AUDIO.updateGains();
+          renderMixerTab();
+          toast(`已切换书房声场：${p.name}`);
+          return;
+        }
+
+        const tt = e.target.closest('[data-ttest]');
+        if (tt) {
+          if (tt.dataset.ttest === 'page') AUDIO.testPage();
+          else if (tt.dataset.ttest === 'keys') AUDIO.testKeys();
+          else if (tt.dataset.ttest === 'breath') AUDIO.testBreath();
+          else if (tt.dataset.ttest === 'heart') AUDIO.testHeart();
+          return;
+        }
+
+        const dn = e.target.closest('[data-del-note]');
+        if (dn) {
+          AUDIO.uiSound('tap');
+          ST.data.notes = ST.data.notes.filter(x => x.id !== dn.dataset.delNote);
+          saveData(); renderDeskTab(); toast('已删除该张纸条');
+        }
+      });
+
+      $('app').addEventListener('input', e => {
+        const sl = e.target.closest('input[data-tr]');
+        if (!sl) return;
+        const k = sl.dataset.tr, v = Number(sl.value);
+        ST.cfg.tracks[k] = v;
+        if ($('tv_' + k)) $('tv_' + k).textContent = v + '%';
+        sl.closest('.track-card')?.classList.toggle('live', v > 0);
+        AUDIO.updateGains();
+        saveCfg();
+      });
+
+      $('modal').onclick = e => { if (e.target === $('modal')) closeModal(); };
+    }
+
+    function updateZenClock() {
+      const d = new Date();
+      if ($('zen-clock')) $('zen-clock').textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    }
+
+    window.onload = function () {
+      syncViewportHeight();
+      $('dimmer-range').value = ST.cfg.brightness;
+      $('dimmer-lbl').textContent = ST.cfg.brightness + '%';
+      document.querySelectorAll('[data-temp]').forEach(x => x.classList.toggle('on', x.dataset.temp === ST.cfg.temp));
+      bindEvents();
+      syncAudioUI();
+      switchTab('lamp');
+      setTimeout(ensureLampIcon, 240);
+      updateZenClock();
+      setInterval(updateZenClock, 30000);
+    };
+  </script>
+</body>
+</html>
